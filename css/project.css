@@ -1,0 +1,97 @@
+.content {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+.carousel-container {
+    border: 2px solid rgb(137, 161, 177);
+    padding: 15px;
+    flex: 1 1 60%;
+    margin-right: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.carousel-thumbnails {
+    display: flex;
+    justify-content: center;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+.carousel-thumbnails img {
+    width: 100px;
+    height: auto;
+    cursor: pointer;
+    margin: 5px;
+    border: 1px solid #ddd;
+    padding: 2px;
+    position: relative;
+}
+.carousel-thumbnails img.active {
+    border: 2px solid #007bff;
+}
+.carousel-thumbnails .youtube-thumbnail {
+    position: relative;
+}
+.carousel-thumbnails .youtube-thumbnail::before {
+    content: '\f04b';
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    color: white;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+    padding: 10px;
+}
+.carousel-item img,
+.carousel-item iframe {
+    width: 100%;
+    height: auto;
+}
+.menu {
+    flex: 1 1 35%;
+    padding: 15px;
+    border: 2px solid #ddd;
+    margin-top: 20px;
+}
+.menu-title {
+    font-size: 1.5em;
+    margin-bottom: 10px;
+}
+.menu-text {
+    margin-bottom: 20px;
+}
+.tags {
+    list-style: none;
+    padding: 0;
+}
+.tags li {
+    display: inline;
+    margin-right: 5px;
+}
+.tag {
+    display: inline-block;
+    padding: 5px 10px;
+    background-color: #007bff;
+    color: white;
+    border-radius: 15px;
+    font-size: 0.875em;
+}
+@media (max-width: 768px) {
+    .carousel-container, .menu {
+        flex: 1 1 100%;
+        margin-right: 0;
+    }
+}
+
+.update-date {
+    font-size: 0.875em;
+    color: #666;
+    margin-top: 10px;
+    border:#007bff;
+}

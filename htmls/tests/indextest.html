@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site Pessoal</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <style>
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .carousel-container {
+            border: 2px solid rgb(137, 161, 177);
+            padding: 15px;
+            flex: 1 1 60%;
+            margin-right: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .carousel-thumbnails {
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .carousel-thumbnails img {
+            width: 100px;
+            height: auto;
+            cursor: pointer;
+            margin: 5px;
+            border: 1px solid #ddd;
+            padding: 2px;
+            position: relative;
+        }
+        .carousel-thumbnails img.active {
+            border: 2px solid #007bff;
+        }
+        .carousel-thumbnails .youtube-thumbnail {
+            position: relative;
+        }
+        .carousel-thumbnails .youtube-thumbnail::before {
+            content: '\f04b';
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            padding: 10px;
+        }
+        .carousel-item img,
+        .carousel-item iframe {
+            width: 100%;
+            height: auto;
+        }
+        .menu {
+            flex: 1 1 35%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            margin-top: 20px;
+        }
+        .menu-title {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+        .menu-text {
+            margin-bottom: 20px;
+        }
+        .tags {
+            list-style: none;
+            padding: 0;
+        }
+        .tags li {
+            display: inline;
+            margin-right: 5px;
+        }
+        .tag {
+            display: inline-block;
+            padding: 5px 10px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 15px;
+            font-size: 0.875em;
+        }
+        @media (max-width: 768px) {
+            .carousel-container, .menu {
+                flex: 1 1 100%;
+                margin-right: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Bem-vindo ao Meu Site Pessoal</h1>
+        <div class="content">
+            <div class="carousel-container">
+                <div id="carouselExample" class="carousel slide" data-ride="carousel">
+                    <div class="carousel-inner">
+                        <div class="carousel-item active">
+                            <img src="https://via.placeholder.com/800x400" class="d-block w-100" alt="Slide 1">
+                        </div>
+                        <div class="carousel-item">
+                            <img src="https://via.placeholder.com/800x400" class="d-block w-100" alt="Slide 2">
+                        </div>
+                        <div class="carousel-item">
+                            <img src="https://via.placeholder.com/800x400" class="d-block w-100" alt="Slide 3">
+                        </div>
+                        <div class="carousel-item">
+                            <iframe src="https://www.youtube.com/embed/VIDEO_ID" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        </div>
+                    </div>
+                    <a class="carousel-control-prev" href="#carouselExample" role="button" data-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="sr-only">Anterior</span>
+                    </a>
+                    <a class="carousel-control-next" href="#carouselExample" role="button" data-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="sr-only">Próximo</span>
+                    </a>
+                </div>
+                <div class="carousel-thumbnails">
+                    <img src="https://via.placeholder.com/100x50" data-target="#carouselExample" data-slide-to="0" class="active">
+                    <img src="https://via.placeholder.com/100x50" data-target="#carouselExample" data-slide-to="1">
+                    <img src="https://via.placeholder.com/100x50" data-target="#carouselExample" data-slide-to="2">
+                    <img src="https://via.placeholder.com/100x50" data-target="#carouselExample" data-slide-to="3" class="youtube-thumbnail">
+                </div>
+            </div>
+            <div class="menu">
+                <div class="menu-title">Título do Menu</div>
+                <div class="menu-text">
+                    Este é um exemplo de texto que pode ser usado para fornecer informações adicionais ou uma descrição detalhada.
+                </div>
+                <ul class="tags">
+                    <li><span class="tag">Tag1</span></li>
+                    <li><span class="tag">Tag2</span></li>
+                    <li><span class="tag">Tag3</span></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
