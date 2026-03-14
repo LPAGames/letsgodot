@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aetheria RPG | The NFT Frontier</title>
+    <style>
+        :root {
+            --primary: #bc13fe;
+            --secondary: #25d5fd;
+            --accent: #ff00e6;
+            --bg: #050510;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --text: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+            cursor: crosshair;
+        }
+
+        /* Animated Background Canvas */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at center, #1a0b2e 0%, #050510 100%);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 20px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            background: rgba(5, 5, 16, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(188, 19, 254, 0.3);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: 3px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            margin-left: 30px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--secondary);
+            text-shadow: 0 0 10px var(--secondary);
+        }
+
+        /* Hero Section */
+        section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 100px 20px;
+            position: relative;
+        }
+
+        .hero-content {
+            text-align: center;
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: clamp(3rem, 10vw, 6rem);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            line-height: 0.9;
+            animation: titleGlow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes titleGlow {
+            from { text-shadow: 0 0 20px rgba(188, 19, 254, 0.5); }
+            to { text-shadow: 0 0 50px rgba(37, 213, 253, 0.8), 0 0 100px rgba(188, 19, 254, 0.4); }
+        }
+
+        .hero-subtitle {
+            font-size: 1.2rem;
+            color: var(--secondary);
+            letter-spacing: 5px;
+            margin-bottom: 40px;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: 0.4s;
+        }
+
+        .btn:hover {
+            background: var(--primary);
+            box-shadow: 0 0 30px var(--primary);
+            transform: translateY(-5px);
+        }
+
+        /* NFT Showcase */
+        .section-title {
+            font-size: 3rem;
+            margin-bottom: 50px;
+            text-align: center;
+        }
+
+        .nft-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .nft-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 20px;
+            transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(5px);
+            perspective: 1000px;
+        }
+
+        .nft-card:hover {
+            border-color: var(--secondary);
+            transform: translateY(-10px) rotateY(10deg);
+        }
+
+        .nft-image {
+            width: 100%;
+            height: 300px;
+            background: linear-gradient(45deg, #121212, #2a2a2a);
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* CSS Drawing of an "Aether Gem" NFT */
+        .gem {
+            width: 100px;
+            height: 100px;
+            background: var(--primary);
+            clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+            animation: float 4s ease-in-out infinite;
+            filter: drop-shadow(0 0 20px var(--primary));
+        }
+
+        .gem-blue { background: var(--secondary); animation-delay: -1s; }
+        .gem-pink { background: var(--accent); animation-delay: -2s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(15deg); }
+        }
+
+        .nft-info h3 { color: var(--secondary); margin-bottom: 10px; }
+        .nft-info p { font-size: 0.9rem; opacity: 0.7; line-height: 1.6; }
+
+        /* Roadmap Section */
+        .roadmap {
+            max-width: 800px;
+            width: 100%;
+            position: relative;
+        }
+
+        .roadmap::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            width: 2px;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent, var(--primary), var(--secondary), transparent);
+        }
+
+        .roadmap-item {
+            margin-bottom: 60px;
+            width: 45%;
+            position: relative;
+            padding: 20px;
+            background: var(--card-bg);
+            border-radius: 10px;
+            opacity: 0;
+            transform: translateX(-50px);
+            transition: 1s;
+        }
+
+        .roadmap-item.reveal {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .roadmap-item:nth-child(even) {
+            margin-left: 55%;
+            transform: translateX(50px);
+        }
+
+        .roadmap-item.reveal:nth-child(even) {
+            transform: translateX(0);
+        }
+
+        .roadmap-date {
+            color: var(--primary);
+            font-weight: bold;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        /* Footer */
+        footer {
+            padding: 50px;
+            text-align: center;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.5);
+        }
+
+        .social-icons {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .icon-circle {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--secondary);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .icon-circle:hover {
+            background: var(--secondary);
+            box-shadow: 0 0 15px var(--secondary);
+        }
+
+        /* Scroll Progress Bar */
+        #progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            z-index: 1001;
+            width: 0%;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="progress"></div>
+    <canvas id="bg-canvas"></canvas>
+
+    <nav>
+        <div class="logo">Aetheria</div>
+        <div class="nav-links">
+            <a href="#hero">Home</a>
+            <a href="#about">Lore</a>
+            <a href="#collection">NFTs</a>
+            <a href="#roadmap">Roadmap</a>
+            <a href="#" class="btn" style="padding: 10px 20px; margin-left: 20px;">Connect Wallet</a>
+        </div>
+    </nav>
+
+    <section id="hero">
+        <div class="hero-content">
+            <div class="hero-subtitle">BEYOND THE VEIL</div>
+            <h1>AETHERIA RPG</h1>
+            <p style="max-width: 600px; margin: 0 auto 40px; line-height: 1.8; opacity: 0.8;">
+                The first decentralized RPG where your destiny is minted. Explore the floating isles, battle primordial beasts, and own your legacy in the blockchain.
+            </p>
+            <button class="btn" onclick="location.href='#collection'">Explore Collection</button>
+        </div>
+    </section>
+
+    <section id="about">
+        <h2 class="section-title">The Lore</h2>
+        <div style="max-width: 800px; text-align: center; font-size: 1.2rem; line-height: 2;">
+            <p class="reveal-text">In the year 2042, the digital and physical realms collided, creating <strong>Aetheria</strong>. It is a world powered by shards of pure data—NFTs that hold the essence of power. Players don't just play; they manifest. Every sword forged, every land claimed, and every victory earned is a unique asset living forever on the ledger.</p>
+        </div>
+    </section>
+
+    <section id="collection">
+        <h2 class="section-title">Genesis Artifacts</h2>
+        <div class="nft-grid">
+            <!-- Card 1 -->
+            <div class="nft-card">
+                <div class="nft-image">
+                    <div class="gem"></div>
+                </div>
+                <div class="nft-info">
+                    <h3>Void Reaver Shard</h3>
+                    <p>Rarity: Legendary</p>
+                    <p>Unlocks the ability to manipulate space-time within the Shadow Dungeons.</p>
+                </div>
+            </div>
+            <!-- Card 2 -->
+            <div class="nft-card">
+                <div class="nft-image">
+                    <div class="gem gem-blue"></div>
+                </div>
+                <div class="nft-info">
+                    <h3>Celestial Aegis</h3>
+                    <p>Rarity: Epic</p>
+                    <p>A defensive relic forged from the heart of a dying star. 40% damage reduction.</p>
+                </div>
+            </div>
+            <!-- Card 3 -->
+            <div class="nft-card">
+                <div class="nft-image">
+                    <div class="gem gem-pink"></div>
+                </div>
+                <div class="nft-info">
+                    <h3>Ethereal Catalyst</h3>
+                    <p>Rarity: Mythic</p>
+                    <p>The core engine for minting rare pets within the Aetheria ecosystem.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="roadmap">
+        <h2 class="section-title">The Path Ahead</h2>
+        <div class="roadmap">
+            <div class="roadmap-item">
+                <span class="roadmap-date">Phase 1: Genesis</span>
+                <h3>The Awakening</h3>
+                <p>Initial NFT mint of 5,555 Founder Keys and lore reveals.</p>
+            </div>
+            <div class="roadmap-item">
+                <span class="roadmap-date">Phase 2: Mechanics</span>
+                <h3>The Forge</h3>
+                <p>Alpha combat system testing and marketplace integration.</p>
+            </div>
+            <div class="roadmap-item">
+                <span class="roadmap-date">Phase 3: Expansion</span>
+                <h3>Floating Isles</h3>
+                <p>Virtual land sale and guild system implementation.</p>
+            </div>
+            <div class="roadmap-item">
+                <span class="roadmap-date">Phase 4: Transcendence</span>
+                <h3>Full Launch</h3>
+                <p>Cross-chain bridge and world-boss global events.</p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="logo">Aetheria</div>
+        <p style="margin-top: 10px; opacity: 0.5;">&copy; 2023 Aetheria RPG Labs. All rights reserved.</p>
+        <div class="social-icons">
+            <div class="icon-circle">T</div>
+            <div class="icon-circle">D</div>
+            <div class="icon-circle">M</div>
+        </div>
+    </footer>
+
+    <script>
+        // --- Canvas Particle System ---
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function initCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 0.1;
+                this.speedX = Math.random() * 1 - 0.5;
+                this.speedY = Math.random() * 1 - 0.5;
+                this.color = Math.random() > 0.5 ? '#bc13fe' : '#25d5fd';
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if (this.x > canvas.width) this.x = 0;
+                if (this.x < 0) this.x = canvas.width;
+                if (this.y > canvas.height) this.y = 0;
+                if (this.y < 0) this.y = canvas.height;
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function createParticles() {
+            for (let i = 0; i < 150; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', initCanvas);
+        initCanvas();
+        createParticles();
+        animate();
+
+        // --- Scroll Progress ---
+        window.addEventListener('scroll', () => {
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (winScroll / height) * 100;
+            document.getElementById("progress").style.width = scrolled + "%";
+        });
+
+        // --- Reveal on Scroll ---
+        const observerOptions = {
+            threshold: 0.2
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('reveal');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.roadmap-item, .nft-card').forEach(el => {
+            observer.observe(el);
+        });
+
+        // --- Mouse Parallax for Hero ---
+        document.addEventListener('mousemove', (e) => {
+            const moveX = (e.clientX - window.innerWidth / 2) * 0.01;
+            const moveY = (e.clientY - window.innerHeight / 2) * 0.01;
+            document.querySelector('.hero-content').style.transform = `translate(${moveX}px, ${moveY}px)`;
+        });
+
+        // --- Smooth Scroll ---
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+</body>
+</html>
