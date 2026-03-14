@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kingdom of Earn | Medieval P2E Demo</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #050505;
+            color: #fff;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .hud-panel {
+            position: absolute;
+            background: rgba(20, 20, 25, 0.85);
+            border: 2px solid #c5a059;
+            border-radius: 8px;
+            padding: 15px;
+            pointer-events: auto;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+
+        #stats-panel {
+            top: 20px;
+            left: 20px;
+            min-width: 200px;
+        }
+
+        #action-panel {
+            bottom: 20px;
+            right: 20px;
+        }
+
+        .token-display {
+            display: flex;
+            align-items: center;
+            font-size: 24px;
+            color: #ffd700;
+            font-weight: bold;
+            text-shadow: 2px 2px 2px #000;
+        }
+
+        .token-icon {
+            width: 30px;
+            height: 30px;
+            background: radial-gradient(circle, #ffd700, #b8860b);
+            border-radius: 50%;
+            margin-right: 10px;
+            border: 2px solid #fff;
+        }
+
+        .btn {
+            background: linear-gradient(to bottom, #c5a059, #8a6d3b);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            text-transform: uppercase;
+            transition: transform 0.1s, filter 0.2s;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .btn:hover {
+            filter: brightness(1.2);
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        #tutorial {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.6);
+            padding: 10px 30px;
+            border-radius: 50px;
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+
+        .label { font-size: 12px; color: #aaa; text-transform: uppercase; }
+
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <div id="stats-panel" class="hud-panel">
+            <div class="label">Balance</div>
+            <div class="token-display">
+                <div class="token-icon"></div>
+                <span id="gold-count">1,240</span> $GOLD
+            </div>
+            <div style="margin-top:10px;">
+                <div class="label">Stamina</div>
+                <div style="width:100%; height:8px; background:#333; margin-top:5px; border-radius:4px; overflow:hidden;">
+                    <div id="stamina-bar" style="width:85%; height:100%; background: #4caf50;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="action-panel" class="hud-panel">
+            <div class="label">Marketplace</div>
+            <button class="btn" onclick="alert('Minting NFT Character...')">Mint NFT Hero</button>
+            <button class="btn" style="background: #4a90e2" onclick="alert('Connecting Wallet...')">Connect Wallet</button>
+        </div>
+
+        <div id="tutorial">USE WASD TO EXPLORE & COLLECT REWARDS</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // --- THREE.JS LOGIC ---
+        let scene, camera, renderer, player, clock;
+        let tokens = [];
+        let score = 1240;
+        const keys = { w: false, a: false, s: false, d: false };
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87ceeb);
+            scene.fog = new THREE.Fog(0x87ceeb, 20, 50);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 10, 10);
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            document.body.appendChild(renderer.domElement);
+
+            clock = new THREE.Clock();
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const sunLight = new THREE.DirectionalLight(0xffffff, 1);
+            sunLight.position.set(10, 20, 10);
+            sunLight.castShadow = true;
+            scene.add(sunLight);
+
+            // Ground
+            const groundGeo = new THREE.PlaneGeometry(100, 100);
+            const groundMat = new THREE.MeshStandardMaterial({ color: 0x3a5f0b });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            // Simple Trees
+            for(let i = 0; i < 40; i++) {
+                createTree(
+                    Math.random() * 80 - 40, 
+                    Math.random() * 80 - 40
+                );
+            }
+
+            // Player Hero (Low Poly Knight representation)
+            const playerGroup = new THREE.Group();
+            
+            const body = new THREE.Mesh(
+                new THREE.BoxGeometry(1, 1.5, 0.6),
+                new THREE.MeshStandardMaterial({ color: 0x555555 })
+            );
+            body.position.y = 1;
+            body.castShadow = true;
+            playerGroup.add(body);
+
+            const head = new THREE.Mesh(
+                new THREE.BoxGeometry(0.5, 0.5, 0.5),
+                new THREE.MeshStandardMaterial({ color: 0xaaaaaa })
+            );
+            head.position.y = 2;
+            playerGroup.add(head);
+
+            const sword = new THREE.Mesh(
+                new THREE.BoxGeometry(0.1, 1.2, 0.2),
+                new THREE.MeshStandardMaterial({ color: 0xcccccc })
+            );
+            sword.position.set(0.7, 1.2, 0.3);
+            sword.rotation.x = Math.PI / 4;
+            playerGroup.add(sword);
+
+            player = playerGroup;
+            scene.add(player);
+
+            // Create some "Play-to-Earn" Tokens
+            for(let i = 0; i < 10; i++) {
+                createToken();
+            }
+
+            window.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
+            window.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
+            window.addEventListener('resize', onWindowResize);
+
+            animate();
+        }
+
+        function createTree(x, z) {
+            const trunk = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.2, 0.2, 1),
+                new THREE.MeshStandardMaterial({ color: 0x4b3621 })
+            );
+            trunk.position.set(x, 0.5, z);
+            
+            const leaves = new THREE.Mesh(
+                new THREE.ConeGeometry(1.5, 3, 8),
+                new THREE.MeshStandardMaterial({ color: 0x1b3022 })
+            );
+            leaves.position.set(x, 2.5, z);
+            leaves.castShadow = true;
+            
+            scene.add(trunk);
+            scene.add(leaves);
+        }
+
+        function createToken() {
+            const geo = new THREE.CylinderGeometry(0.4, 0.4, 0.1, 16);
+            const mat = new THREE.MeshStandardMaterial({ 
+                color: 0xffd700, 
+                metalness: 0.8, 
+                roughness: 0.2,
+                emissive: 0xffd700,
+                emissiveIntensity: 0.2
+            });
+            const token = new THREE.Mesh(geo, mat);
+            token.position.set(
+                Math.random() * 30 - 15,
+                0.8,
+                Math.random() * 30 - 15
+            );
+            token.rotation.x = Math.PI / 2;
+            token.castShadow = true;
+            scene.add(token);
+            tokens.push(token);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function updatePlayer() {
+            const speed = 0.15;
+            if (keys.w) player.position.z -= speed;
+            if (keys.s) player.position.z += speed;
+            if (keys.a) player.position.x -= speed;
+            if (keys.d) player.position.x += speed;
+
+            // Camera follow
+            camera.position.lerp(new THREE.Vector3(player.position.x, player.position.y + 10, player.position.z + 10), 0.1);
+            camera.lookAt(player.position);
+
+            // Token Collision
+            tokens.forEach((token, index) => {
+                const dist = player.position.distanceTo(token.position);
+                if(dist < 1.5) {
+                    scene.remove(token);
+                    tokens.splice(index, 1);
+                    score += 50;
+                    document.getElementById('gold-count').innerText = score.toLocaleString();
+                    createToken(); // Respawn a new one elsewhere
+                }
+            });
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            updatePlayer();
+
+            // Animate tokens
+            tokens.forEach(t => {
+                t.rotation.z += 0.05;
+                t.position.y = 0.8 + Math.sin(time * 3) * 0.2;
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        init();
+    </script>
+</body>
+</html>
