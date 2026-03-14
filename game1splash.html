@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AETERNA: The Iron Tithe | Coming Soon to Steam</title>
+    <style>
+        :root {
+            --gold: #d4af37;
+            --dark-gold: #996515;
+            --blood: #8b0000;
+            --iron: #2f2f2f;
+            --black: #0a0a0a;
+            --text: #e0e0e0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--black);
+            color: var(--text);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Hero Section */
+        header {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: radial-gradient(circle, rgba(60, 40, 20, 1) 0%, rgba(10, 10, 10, 1) 80%);
+            position: relative;
+            border-bottom: 2px solid var(--dark-gold);
+        }
+
+        .hero-vignette {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="noiseFilter"><feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.05"/></svg>');
+            pointer-events: none;
+        }
+
+        h1 {
+            font-size: clamp(3rem, 10vw, 6rem);
+            text-transform: uppercase;
+            letter-spacing: 12px;
+            color: var(--gold);
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+            font-weight: 900;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            letter-spacing: 4px;
+            color: var(--dark-gold);
+            text-transform: uppercase;
+            margin-bottom: 30px;
+        }
+
+        .cta-button {
+            background-color: var(--gold);
+            color: black;
+            padding: 15px 40px;
+            text-decoration: none;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .cta-button:hover {
+            background-color: transparent;
+            color: var(--gold);
+            border: 2px solid var(--gold);
+            box-shadow: 0 0 15px var(--gold);
+        }
+
+        /* Main Content */
+        section {
+            padding: 100px 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+
+        .feature-image {
+            background: linear-gradient(45deg, var(--iron), #444);
+            height: 400px;
+            width: 100%;
+            border: 1px solid var(--dark-gold);
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* The Mace & Shield Visualization (CSS Art) */
+        .paladin-icon {
+            width: 200px;
+            height: 200px;
+            position: relative;
+        }
+        .shield-shape {
+            width: 100px;
+            height: 140px;
+            background: #555;
+            border: 4px solid var(--gold);
+            border-radius: 0 0 50px 50px;
+            position: absolute;
+            left: 10px;
+            top: 20px;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
+        }
+        .mace-shape {
+            width: 15px;
+            height: 160px;
+            background: #333;
+            position: absolute;
+            right: 40px;
+            top: 10px;
+            transform: rotate(15deg);
+        }
+        .mace-head {
+            width: 50px;
+            height: 50px;
+            background: var(--iron);
+            border: 3px solid var(--dark-gold);
+            position: absolute;
+            top: -10px;
+            left: -18px;
+            transform: rotate(45deg);
+        }
+
+        /* Typography */
+        h2 {
+            font-size: 2.5rem;
+            color: var(--gold);
+            margin-bottom: 20px;
+            border-left: 5px solid var(--blood);
+            padding-left: 20px;
+        }
+
+        .description {
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            color: #ccc;
+        }
+
+        .highlight {
+            color: var(--gold);
+            font-weight: bold;
+        }
+
+        /* Detailed Description Section */
+        .combat-focus {
+            background: #111;
+            padding: 60px;
+            border: 1px solid #222;
+            margin: 50px 0;
+            position: relative;
+        }
+
+        .combat-focus::before {
+            content: "";
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 2px;
+            background: var(--gold);
+        }
+
+        .stat-bar {
+            background: #222;
+            height: 10px;
+            width: 100%;
+            margin: 10px 0 25px 0;
+        }
+
+        .stat-fill {
+            background: var(--gold);
+            height: 100%;
+        }
+
+        /* Footer */
+        footer {
+            padding: 50px 20px;
+            text-align: center;
+            border-top: 1px solid #333;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .boss-tag {
+            display: inline-block;
+            background: var(--blood);
+            color: white;
+            padding: 4px 12px;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 768px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+            .feature-image {
+                order: -1;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="hero-vignette"></div>
+        <h1>AETERNA</h1>
+        <div class="subtitle">The Iron Tithe</div>
+        <p style="margin-bottom: 40px; max-width: 600px; padding: 0 20px;">Master the weight of divine steel in a brutal arena where only the faithful survive.</p>
+        <a href="#" class="cta-button">Wishlist on Steam</a>
+    </header>
+
+    <section>
+        <div class="feature-grid">
+            <div>
+                <span class="boss-tag">Class Spotlight</span>
+                <h2>The Templar Paladin</h2>
+                <p class="description">
+                    In the heart of the Colosseum of Ash, the Templar stands as a monolith of unyielding faith. You do not just play a warrior; you become a <span class="highlight">vessel of divine kinetic force</span>.
+                </p>
+                <p class="description">
+                    Every swing of your heavy mace carries the momentum of a falling star, designed to crush plate armor and shatter the resolve of colossal monsters and rival champions alike.
+                </p>
+            </div>
+            <div class="feature-image">
+                <div class="paladin-icon">
+                    <div class="shield-shape"></div>
+                    <div class="mace-shape">
+                        <div class="mace-head"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="combat-focus">
+        <h2 style="text-align: center; border: none; padding: 0;">Steel & Sanctity</h2>
+        <div style="margin-top: 40px;">
+            <h3 style="color: var(--gold);">The Flanged Mace</h3>
+            <p class="description">
+                Experience "Heavyweight Combat Syntax." Unlike blades that slice, your flanged mace interacts with physics. Strike a boss's limb to cause <span class="highlight">Fracture Debuffs</span>, or overhead-smash another player to drain their stamina instantly. The impact creates a shockwave of holy light, punishing those who stand too close to your righteous fury.
+            </p>
+            <div class="stat-bar"><div class="stat-fill" style="width: 85%;"></div></div>
+
+            <h3 style="color: var(--gold);">The Great Bulwark Shield</h3>
+            <p class="description">
+                Your shield is not just for defense—it is a weapon of displacement. Hold your ground against a screen-filling boss to trigger <span class="highlight">Perfect Reflection</span>, turning their own kinetic energy back against them. In PvP, use the shield-edge to stagger opponents, opening a window for a crushing mace finisher.
+            </p>
+            <div class="stat-bar"><div class="stat-fill" style="width: 95%;"></div></div>
+        </div>
+    </section>
+
+    <section>
+        <div class="feature-grid">
+            <div class="feature-image" style="background: linear-gradient(135deg, #1a0000, #330000);">
+                <div style="color: var(--blood); font-size: 5rem; opacity: 0.3;">☠</div>
+            </div>
+            <div>
+                <h2>Endless Arena</h2>
+                <p class="description">
+                    <span class="highlight">Grand Bosses:</span> Face deities of the old world, each requiring precise shield-timing and mace positioning.
+                </p>
+                <p class="description">
+                    <span class="highlight">Cursed PvP:</span> Other players enter the arena as 'Penitent Spirits.' Defeat them to claim their Iron Tithe and upgrade your gear.
+                </p>
+                <p class="description">
+                    <span class="highlight">Impactful Progression:</span> Customize your Templar with ancient relics that change how your mace interacts with the environment.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section style="text-align: center;">
+        <h2 style="border: none; padding: 0;">Prepare for the Tithe</h2>
+        <p class="description" style="margin-bottom: 40px;">Join our community and follow the development of the most tactile combat experience of the year.</p>
+        <a href="#" class="cta-button">Follow on Steam</a>
+    </section>
+
+    <footer>
+        <p>&copy; 2023 Iron Tithe Studios. All Rights Reserved.</p>
+        <p>AETERNA: The Iron Tithe - Coming Soon to Windows PC.</p>
+    </footer>
+
+</body>
+</html>
