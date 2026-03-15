@@ -3,257 +3,268 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Procedural Medieval World</title>
+    <title>Spherical Medieval World</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #1a1a1a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { margin: 0; overflow: hidden; background: #050508; font-family: 'Georgia', serif; }
         canvas { display: block; }
         #ui {
             position: absolute;
             top: 20px;
             left: 20px;
-            color: white;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 15px;
-            border-radius: 8px;
+            color: #e0d0b0;
             pointer-events: none;
-            border: 1px solid #444;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
         }
-        h1 { margin: 0 0 10px 0; font-size: 18px; color: #f1c40f; text-transform: uppercase; letter-spacing: 2px; }
-        p { margin: 5px 0; font-size: 12px; opacity: 0.8; }
-        .controls { margin-top: 10px; font-style: italic; color: #aaa; }
+        h1 { margin: 0; font-size: 24px; letter-spacing: 2px; text-transform: uppercase; }
+        p { margin: 5px 0; font-style: italic; opacity: 0.8; }
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            color: #888;
+            font-size: 12px;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
 
     <div id="ui">
-        <h1>Medieval Realm</h1>
-        <p id="seed-text">Kingdom of Proceduria</p>
-        <div class="controls">Drag to Rotate • Scroll to Zoom</div>
+        <h1>The Tiny Kingdom - For Maltecus</h1>
+        <p>A revolving realm in the cosmic void</p>
     </div>
 
-    <!-- Three.js via CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <div class="controls">Drag to Rotate • Scroll to Zoom</div>
+
+    <!-- Load Three.js from a CDN (Essential dependency) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
 
     <script>
-        /** 
-         * PROCEDURAL MEDIEVAL WORLD
-         * Features: Perlin-like noise terrain, Biomes, Water, 
-         * Procedural Trees, Houses, and a Central Keep.
-         */
+        // --- Setup ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
 
-        let scene, camera, renderer, worldContainer;
-        const GRID_SIZE = 60;
-        const TILE_SIZE = 1;
+        // --- Planet Core ---
+        const planetRadius = 5;
+        const worldGroup = new THREE.Group();
+        scene.add(worldGroup);
 
-        // Simple pseudo-random noise function
-        const seed = Math.random() * 1000;
-        function noise(x, y) {
-            const n = Math.sin(x * 0.12 + seed) + Math.sin(y * 0.15 + seed) + 
-                      Math.sin(x * 0.4 + y * 0.3 + seed) * 0.5;
-            return n;
+        // Procedural Terrain Texture
+        const canvas = document.createElement('canvas');
+        canvas.width = 1024;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#2d5a27'; // Grass
+        ctx.fillRect(0, 0, 1024, 512);
+        for(let i = 0; i < 2000; i++) {
+            ctx.fillStyle = `rgba(40, ${70 + Math.random() * 30}, 40, 0.5)`;
+            ctx.fillRect(Math.random() * 1024, Math.random() * 512, 4, 4);
+        }
+        const planetTex = new THREE.CanvasTexture(canvas);
+
+        const sphereGeo = new THREE.SphereGeometry(planetRadius, 64, 64);
+        const sphereMat = new THREE.MeshStandardMaterial({ 
+            map: planetTex,
+            roughness: 0.8,
+            metalness: 0.1
+        });
+        const planet = new THREE.Mesh(sphereGeo, sphereMat);
+        planet.receiveShadow = true;
+        worldGroup.add(planet);
+
+        // --- Water Layer ---
+        const waterGeo = new THREE.SphereGeometry(planetRadius * 0.98, 32, 32);
+        const waterMat = new THREE.MeshPhongMaterial({
+            color: 0x156289,
+            transparent: true,
+            opacity: 0.8,
+            shininess: 100
+        });
+        const water = new THREE.Mesh(waterGeo, waterMat);
+        worldGroup.add(water);
+
+        // --- Helper: Spherical Placement ---
+        function getSphericalPos(radius, phi, theta) {
+            return new THREE.Vector3(
+                radius * Math.sin(phi) * Math.cos(theta),
+                radius * Math.cos(phi),
+                radius * Math.sin(phi) * Math.sin(theta)
+            );
         }
 
-        init();
-        animate();
-
-        function init() {
-            // Scene Setup
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x222233);
-            scene.fog = new THREE.FogExp2(0x222233, 0.015);
-
-            // Camera Setup (Orthographic for top-down feel)
-            const aspect = window.innerWidth / window.innerHeight;
-            const d = 30;
-            camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
-            camera.position.set(40, 40, 40);
-            camera.lookAt(0, 0, 0);
-
-            // Renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            document.body.appendChild(renderer.domElement);
-
-            // Lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambientLight);
-
-            const sun = new THREE.DirectionalLight(0xffffff, 1.0);
-            sun.position.set(50, 100, 50);
-            sun.castShadow = true;
-            sun.shadow.mapSize.width = 2048;
-            sun.shadow.mapSize.height = 2048;
-            sun.shadow.camera.left = -50;
-            sun.shadow.camera.right = 50;
-            sun.shadow.camera.top = 50;
-            sun.shadow.camera.bottom = -50;
-            scene.add(sun);
-
-            worldContainer = new THREE.Group();
-            scene.add(worldContainer);
-
-            generateWorld();
-
-            // Interaction
-            window.addEventListener('resize', onWindowResize, false);
+        // --- Assets Creation ---
+        const createTree = (pos) => {
+            const tree = new THREE.Group();
             
-            let isDragging = false;
-            let previousMousePosition = { x: 0, y: 0 };
+            const trunkGeo = new THREE.CylinderGeometry(0.05, 0.07, 0.4, 6);
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4d2926 });
+            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+            trunk.position.y = 0.2;
+            tree.add(trunk);
 
-            document.addEventListener('mousedown', () => isDragging = true);
-            document.addEventListener('mouseup', () => isDragging = false);
-            document.addEventListener('mousemove', (e) => {
-                if(isDragging) {
-                    const deltaMove = { x: e.offsetX - previousMousePosition.x };
-                    worldContainer.rotation.y += deltaMove.x * 0.01;
-                }
-                previousMousePosition = { x: e.offsetX, y: e.offsetY };
-            });
+            const leavesGeo = new THREE.ConeGeometry(0.25, 0.6, 6);
+            const leavesMat = new THREE.MeshStandardMaterial({ color: 0x1b4d2e });
+            const leaves = new THREE.Mesh(leavesGeo, leavesMat);
+            leaves.position.y = 0.5;
+            tree.add(leaves);
 
-            document.addEventListener('wheel', (e) => {
-                camera.zoom = Math.max(0.5, Math.min(3, camera.zoom - e.deltaY * 0.001));
-                camera.updateProjectionMatrix();
-            });
-        }
+            tree.position.copy(pos);
+            tree.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), pos.clone().normalize());
+            tree.castShadow = true;
+            return tree;
+        };
 
-        function generateWorld() {
-            const terrainGeo = new THREE.BoxGeometry(TILE_SIZE, 1, TILE_SIZE);
+        const createHouse = (pos) => {
+            const house = new THREE.Group();
             
-            for (let x = -GRID_SIZE/2; x < GRID_SIZE/2; x++) {
-                for (let z = -GRID_SIZE/2; z < GRID_SIZE/2; z++) {
-                    const h = noise(x, z);
-                    let color, yPos, heightMult;
+            const bodyGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xd2b48c });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.2;
+            house.add(body);
 
-                    if (h < -0.2) {
-                        // Deep Water
-                        color = 0x3498db;
-                        yPos = -1.5;
-                        heightMult = 1;
-                    } else if (h < 0) {
-                        // Shallow Water / Sand
-                        color = 0xf1c40f;
-                        yPos = -0.8;
-                        heightMult = 1;
-                    } else if (h < 0.6) {
-                        // Grass
-                        color = 0x2ecc71;
-                        yPos = h * 2;
-                        heightMult = 1 + h * 3;
-                        
-                        // Chance to spawn features on grass
-                        const rand = Math.random();
-                        if (rand > 0.98) {
-                            createHouse(x, yPos + (heightMult/2), z);
-                        } else if (rand > 0.85) {
-                            createTree(x, yPos + (heightMult/2), z);
-                        }
-                    } else {
-                        // Mountains / Rock
-                        color = 0x95a5a6;
-                        yPos = h * 3;
-                        heightMult = 1 + h * 5;
-                    }
+            const roofGeo = new THREE.ConeGeometry(0.35, 0.3, 4);
+            const roofMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+            const roof = new THREE.Mesh(roofGeo, roofMat);
+            roof.position.y = 0.5;
+            roof.rotation.y = Math.PI/4;
+            house.add(roof);
 
-                    const material = new THREE.MeshStandardMaterial({ color: color });
-                    const cube = new THREE.Mesh(terrainGeo, material);
-                    cube.position.set(x, yPos, z);
-                    cube.scale.y = heightMult;
-                    cube.receiveShadow = true;
-                    cube.castShadow = h > 0.6;
-                    worldContainer.add(cube);
+            house.position.copy(pos);
+            house.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), pos.clone().normalize());
+            house.castShadow = true;
+            return house;
+        };
+
+        const createTower = (pos) => {
+            const tower = new THREE.Group();
+            const bodyGeo = new THREE.CylinderGeometry(0.3, 0.35, 1.2, 8);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x777777 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.6;
+            tower.add(body);
+
+            const topGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.2, 8);
+            const top = new THREE.Mesh(topGeo, bodyMat);
+            top.position.y = 1.2;
+            tower.add(top);
+
+            const roofGeo = new THREE.ConeGeometry(0.45, 0.5, 8);
+            const roofMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+            const roof = new THREE.Mesh(roofGeo, roofMat);
+            roof.position.y = 1.5;
+            tower.add(roof);
+
+            tower.position.copy(pos);
+            tower.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), pos.clone().normalize());
+            tower.castShadow = true;
+            return tower;
+        };
+
+        // Populate World
+        for(let i = 0; i < 150; i++) {
+            const phi = Math.random() * Math.PI;
+            const theta = Math.random() * Math.PI * 2;
+            const pos = getSphericalPos(planetRadius, phi, theta);
+            
+            // Avoid extreme poles for logic
+            if(phi > 0.4 && phi < 2.7) {
+                if(Math.random() > 0.8) {
+                    worldGroup.add(createHouse(pos));
+                } else {
+                    worldGroup.add(createTree(pos));
                 }
             }
-
-            // Central Castle Keep
-            createCastle(0, 2, 0);
         }
 
-        function createTree(x, y, z) {
-            const trunkGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.5);
-            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5d4037 });
-            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-            trunk.position.set(x, y + 0.25, z);
-            trunk.castShadow = true;
-            worldContainer.add(trunk);
+        // Castle at "North Pole"
+        worldGroup.add(createTower(getSphericalPos(planetRadius, 0.1, 0)));
+        worldGroup.add(createTower(getSphericalPos(planetRadius, 0.3, 0.5)));
+        worldGroup.add(createTower(getSphericalPos(planetRadius, 0.3, -0.5)));
 
-            const leavesGeo = new THREE.ConeGeometry(0.4, 0.8, 6);
-            const leavesMat = new THREE.MeshStandardMaterial({ color: 0x1b5e20 });
-            const leaves = new THREE.Mesh(leavesGeo, leavesMat);
-            leaves.position.set(x, y + 0.7, z);
-            leaves.castShadow = true;
-            worldContainer.add(leaves);
+        // --- Stars ---
+        const starGeo = new THREE.BufferGeometry();
+        const starPos = [];
+        for(let i = 0; i < 3000; i++) {
+            starPos.push((Math.random() - 0.5) * 400, (Math.random() - 0.5) * 400, (Math.random() - 0.5) * 400);
         }
+        starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
+        const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.5 });
+        const stars = new THREE.Points(starGeo, starMat);
+        scene.add(stars);
 
-        function createHouse(x, y, z) {
-            const bodyGeo = new THREE.BoxGeometry(0.6, 0.5, 0.6);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xd7ccc8 });
-            const body = new THREE.Mesh(bodyGeo, bodyMat);
-            body.position.set(x, y + 0.25, z);
-            body.castShadow = true;
-            worldContainer.add(body);
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0x404040, 2);
+        scene.add(ambientLight);
 
-            //const roofGeo = new THREE.PyramidGeometry(0.5, 0.4, 4); // Basic cone for roof
-            const roofMat = new THREE.MeshStandardMaterial({ color: 0xc62828 });
-            const roof = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.4, 4), roofMat);
-            roof.position.set(x, y + 0.7, z);
-            roof.rotation.y = Math.PI / 4;
-            roof.castShadow = true;
-            worldContainer.add(roof);
-        }
+        const sunLight = new THREE.DirectionalLight(0xffffff, 3);
+        sunLight.position.set(10, 20, 10);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 1024;
+        sunLight.shadow.mapSize.height = 1024;
+        scene.add(sunLight);
 
-        function createCastle(x, y, z) {
-            const group = new THREE.Group();
+        // Atmospheric Glow
+        const glowGeo = new THREE.SphereGeometry(planetRadius * 1.15, 32, 32);
+        const glowMat = new THREE.MeshBasicMaterial({
+            color: 0x4488ff,
+            side: THREE.BackSide,
+            transparent: true,
+            opacity: 0.1
+        });
+        const glow = new THREE.Mesh(glowGeo, glowMat);
+        worldGroup.add(glow);
 
-            // Main Keep
-            const keepGeo = new THREE.BoxGeometry(3, 4, 3);
-            const stoneMat = new THREE.MeshStandardMaterial({ color: 0x7f8c8d });
-            const keep = new THREE.Mesh(keepGeo, stoneMat);
-            keep.castShadow = true;
-            group.add(keep);
+        // --- Interaction ---
+        camera.position.z = 15;
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
 
-            // Four Towers
-            const towerGeo = new THREE.CylinderGeometry(0.8, 0.8, 5, 8);
-            const offsets = [[1.8, 1.8], [-1.8, 1.8], [1.8, -1.8], [-1.8, -1.8]];
-            
-            offsets.forEach(off => {
-                const tower = new THREE.Mesh(towerGeo, stoneMat);
-                tower.position.set(off[0], 0.5, off[1]);
-                tower.castShadow = true;
-                group.add(tower);
+        document.addEventListener('mousedown', () => isDragging = true);
+        document.addEventListener('mouseup', () => isDragging = false);
+        document.addEventListener('mousemove', (e) => {
+            if(isDragging) {
+                const deltaMove = {
+                    x: e.offsetX - previousMousePosition.x,
+                    y: e.offsetY - previousMousePosition.y
+                };
+                worldGroup.rotation.y += deltaMove.x * 0.005;
+                worldGroup.rotation.x += deltaMove.y * 0.005;
+            }
+            previousMousePosition = { x: e.offsetX, y: e.offsetY };
+        });
 
-                // Tower Roofs
-                const tRoofGeo = new THREE.ConeGeometry(1, 1.5, 8);
-                const tRoofMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50 });
-                const troof = new THREE.Mesh(tRoofGeo, tRoofMat);
-                troof.position.set(off[0], 3.5, off[1]);
-                group.add(troof);
-            });
+        document.addEventListener('wheel', (e) => {
+            camera.position.z = Math.max(8, Math.min(30, camera.position.z + e.deltaY * 0.01));
+        });
 
-            group.position.set(x, y + 1, z);
-            worldContainer.add(group);
-        }
-
-        function onWindowResize() {
-            const aspect = window.innerWidth / window.innerHeight;
-            const d = 30;
-            camera.left = -d * aspect;
-            camera.right = d * aspect;
-            camera.top = d;
-            camera.bottom = -d;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
+        // --- Animation Loop ---
         function animate() {
             requestAnimationFrame(animate);
-            // Gentle idle rotation
-            if (worldContainer) {
-                // worldContainer.rotation.y += 0.001; 
+            
+            if(!isDragging) {
+                worldGroup.rotation.y += 0.002;
             }
+
+            // Subtle "pulse" for water
+            water.scale.setScalar(1 + Math.sin(Date.now() * 0.001) * 0.005);
+            
             renderer.render(scene, camera);
         }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
     </script>
 </body>
 </html>
