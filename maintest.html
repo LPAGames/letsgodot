@@ -194,7 +194,7 @@
             body.castShadow = true;
             worldContainer.add(body);
 
-            const roofGeo = new THREE.PyramidGeometry(0.5, 0.4, 4); // Basic cone for roof
+            //const roofGeo = new THREE.PyramidGeometry(0.5, 0.4, 4); // Basic cone for roof
             const roofMat = new THREE.MeshStandardMaterial({ color: 0xc62828 });
             const roof = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.4, 4), roofMat);
             roof.position.set(x, y + 0.7, z);
