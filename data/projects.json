@@ -1,0 +1,41 @@
+{
+    "games": [
+        {
+            "name": "Dodge the Creeps",
+            "description": "A simple arcade game where you must dodge enemies for as long as you can.",
+            "repository": "https://github.com/godotengine/godot-demo-projects/tree/master/2d/dodge_the_creeps",
+            "license": "MIT",
+            "tags": ["arcade", "2D", "beginner"]
+        },
+        {
+            "name": "TPS Demo",
+            "description": "A third-person shooter demo made with Godot.",
+            "repository": "https://github.com/godotengine/tps-demo",
+            "license": "MIT",
+            "tags": ["shooter", "3D", "intermediate"]
+        }
+    ],
+    "addons": [
+        {
+            "name": "Godot Steam",
+            "description": "Steamworks (Steam SDK) integration for Godot Game Engine.",
+            "repository": "https://github.com/Gramps/GodotSteam",
+            "license": "MIT",
+            "tags": ["integration", "Steam", "SDK"]
+        },
+        {
+            "name": "Humanizer",
+            "description": "Create customizable realistic characters easily inside Godot.",
+            "repository": "https://github.com/NitroxNova/humanizer",
+            "license": "Unlicense",
+            "tags": ["Character Creation", "3D", "Realistic"]
+        },
+        {
+            "name": "Dialogic",
+            "description": "A powerful and easy to use dialogue system for Godot.",
+            "repository": "https://github.com/coppolaemilio/dialogic",
+            "license": "MIT",
+            "tags": ["dialogue", "system", "2D"]
+        }
+    ]
+}
