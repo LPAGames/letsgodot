@@ -4,9 +4,10 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { AssetManager } from './AssetManager.js';
 
 // --- Config ---
-const WORLD_RADIUS = 150;
+const WORLD_RADIUS = 600;
 const HEIGHT_SCALE = WORLD_RADIUS / 15.0;
-const RESOLUTION = 800;
+const WATER_LEVEL = WORLD_RADIUS+ (HEIGHT_SCALE * 0.09);
+const RESOLUTION = 2048;
 const MAP_SRC = 'imgs/topography_2k.png';
 
 let scene, camera, renderer, controls, stats, heightData;
@@ -44,8 +45,8 @@ async function init() {
     scene.add(world);
 
     // 3. Water
-    const waterGeo = new THREE.SphereGeometry(WORLD_RADIUS + 1, 64, 64);
-    const waterMat = new THREE.MeshStandardMaterial({ color: 0x0044ff, transparent: true, opacity: 0.8 });
+    const waterGeo = new THREE.SphereGeometry(WATER_LEVEL, 64, 64);
+    const waterMat = new THREE.MeshStandardMaterial({ color: 0x0044ff, transparent: true, opacity: 0.7 });
     scene.add(new THREE.Mesh(waterGeo, waterMat));
 
     // 4. Lighting

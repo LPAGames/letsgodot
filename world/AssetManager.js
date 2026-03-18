@@ -12,8 +12,8 @@ export class AssetManager {
         const trunkGeo = new THREE.CylinderGeometry(0.2, 0.2, 1, 6);
         trunkGeo.translate(0, 0.5, 0);
         
-        const leavesGeo = new THREE.ConeGeometry(0.8, 2, 6);
-        leavesGeo.translate(0, 1.5, 0);
+        const leavesGeo = new THREE.ConeGeometry(1.5, 4, 10);
+        leavesGeo.translate(0, 2.5, 0);
 
         const material = new THREE.MeshStandardMaterial({ color: 0x133d1b });
         const mesh = new THREE.InstancedMesh(leavesGeo, material, positions.length);
@@ -25,7 +25,7 @@ export class AssetManager {
     createInstancedHouses(positions) {
         if (positions.length === 0) return;
 
-        const bodyGeo = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+        const bodyGeo = new THREE.BoxGeometry(4.5, 3.0, 4.5);
         bodyGeo.translate(0, 0.75, 0);
         const material = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
         const mesh = new THREE.InstancedMesh(bodyGeo, material, positions.length);
