@@ -30,7 +30,7 @@
 
         // --- Settings ---
         const WORLD_RADIUS = 5;
-        const MOUNTAIN_HEIGHT = 0.8; // How high the mountains are
+        const MOUNTAIN_HEIGHT = 0.5; // How high the mountains are
         const RESOLUTION = 512;      // Detailed mesh (increase for more detail)
 
         let scene, camera, renderer, controls;
@@ -64,11 +64,12 @@
             // 3. Create the Rounded World
             // We use SphereGeometry. The segments define how detailed the terrain looks.
             const geometry = new THREE.SphereGeometry(WORLD_RADIUS, RESOLUTION, RESOLUTION / 2);
+            const water_geometry = new THREE.SphereGeometry(WORLD_RADIUS + 0.1, RESOLUTION, RESOLUTION / 2);
 
             // 4. Material with Displacement
             // displacementMap moves vertices based on image brightness
             const material = new THREE.MeshStandardMaterial({
-                color: 0x334455,
+                color: 0x009900,
                 displacementMap: heightMap,
                 displacementScale: MOUNTAIN_HEIGHT,
                 wireframe: false,
@@ -77,6 +78,8 @@
 
             const world = new THREE.Mesh(geometry, material);
             scene.add(world);
+            const water = new THREE.Mesh(water_geometry, new THREE.MeshStandardMaterial({ color: 0x4444ff, roughness: 0.2 }));
+            scene.add(water);
 
             // 5. Lighting (Essential for seeing the height)
             const sun = new THREE.DirectionalLight(0xffffff, 2);
