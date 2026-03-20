@@ -161,7 +161,7 @@ export class AssetManager {
             // Orient to sphere normal
             const normal = pos.clone().normalize();
             dummy.quaternion.setFromUnitVectors(up, normal);
-            dummy.rotateY(Math.random() * 180.0);
+            dummy.rotateY(Math.random() * 360.0);
             
             dummy.updateMatrix();
             iMesh.setMatrixAt(i, dummy.matrix);
@@ -191,7 +191,7 @@ export class AssetManager {
         positions.forEach((pos, i) => {
             dummy.position.copy(pos);
             
-            const scaleFactor = 0.03;
+            const scaleFactor = 0.05;
             
             // Orient to sphere normal
             const normal = pos.clone().normalize();
@@ -200,6 +200,45 @@ export class AssetManager {
             dummy.scale.x +=  Math.random() * scaleFactor;
             dummy.scale.z +=  Math.random() * scaleFactor;
             dummy.scale.y +=  Math.random() * scaleFactor;
+            
+            dummy.updateMatrix();
+            iMesh.setMatrixAt(i, dummy.matrix);
+            
+        });
+    
+        this.scene.add(iMesh);
+    }
+
+    async createGLBOaks(positions) {
+        const loader = new GLTFLoader();
+        const { scene } = await loader.loadAsync('world/models/Oak.glb');
+    
+        // 1. Extract the actual Mesh from the GLB scene
+        let sourceMesh;
+        scene.traverse(child => {
+            if (child.isMesh) sourceMesh = child;
+        });
+    
+        // 2. Create the InstancedMesh (Geometry, Material, Count)
+        const count = positions.length;
+        const iMesh = new THREE.InstancedMesh(sourceMesh.geometry, sourceMesh.material, count);
+    
+        // 3. Populate matrices
+        const dummy = new THREE.Object3D();
+        const up = new THREE.Vector3(0, 1, 0);
+        
+        positions.forEach((pos, i) => {
+            dummy.position.copy(pos);
+            
+            //const scaleFactor = 0.05;
+            
+            // Orient to sphere normal
+            const normal = pos.clone().normalize();
+            dummy.quaternion.setFromUnitVectors(up, normal);
+            dummy.rotateY(Math.random() * 360.0);
+            /* dummy.scale.x +=  Math.random() * scaleFactor;
+            dummy.scale.z +=  Math.random() * scaleFactor;
+            dummy.scale.y +=  Math.random() * scaleFactor; */
             
             dummy.updateMatrix();
             iMesh.setMatrixAt(i, dummy.matrix);

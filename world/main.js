@@ -5,11 +5,11 @@ import { World } from './World.js';
 import { WORLD_DATA } from './locations.js';
 
 const CONFIG = {
-    radius: 1024,
-    heightScale: 40,
-    waterLevel: 1027,
-    resolution: 512,
-    map: 'imgs/topography_2k.png'
+    radius: 1250,
+    heightScale: 50,
+    waterLevel: 1263,
+    resolution: 1024,
+    map: 'imgs/topography_2k_2.png'
 };
 
 let scene, camera, renderer, controls, world, assets, sun;
@@ -48,6 +48,8 @@ function populateWorld() {
     const trees = [];
     const houses = [];
     const towers = [];
+
+    const oaks = [];
     const boats = [];
     const clouds = [];
     const horses = [];
@@ -58,7 +60,7 @@ function populateWorld() {
         const h = world.getSampledHeight(phi, theta);
 
         // Using our height logic from the shader
-        if (h > 0.1 && h < 0.45) {
+        if (h > 0.31 && h < 0.45) {
             const r = CONFIG.radius + (h * CONFIG.heightScale);
             trees.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
         } else if (h >= 0.4 && h < 0.55) {
@@ -69,7 +71,24 @@ function populateWorld() {
             towers.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
         }
     }
+    assets.createInstancedTrees(trees);
+    assets.createGLBHouses(houses);
+    assets.createGLBTowers(towers);
 
+    //oaks
+    for (let i = 0; i < 300; i++) {
+        const phi = Math.acos(2 * Math.random() - 1);
+        const theta = Math.random() * Math.PI * 2;
+        const h = world.getSampledHeight(phi, theta);
+
+        if (h > 0.31 && h <= 0.6) {
+            const r = CONFIG.radius + (h * CONFIG.heightScale);
+            oaks.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
+        }
+    }
+    assets.createGLBOaks(oaks);
+
+    //boats
     for (let i = 0; i < 250; i++) {
         const phi = Math.acos(2 * Math.random() - 1);
         const theta = Math.random() * Math.PI * 2;
@@ -77,9 +96,10 @@ function populateWorld() {
 
         if (h == 0.0) {
             const r = CONFIG.radius + (h * CONFIG.heightScale);
-            boats.push(new THREE.Vector3().setFromSphericalCoords(r + 3.0, phi, theta));
+            boats.push(new THREE.Vector3().setFromSphericalCoords(r + 12.0, phi, theta));
         }
     }
+    assets.createGLBBoats(boats);
 
     //horses
     for (let i = 0; i < 1000; i++) {
@@ -87,30 +107,26 @@ function populateWorld() {
         const theta = Math.random() * Math.PI * 2;
         const h = world.getSampledHeight(phi, theta);
 
-        if (h > 0.1 && h < 0.45) {
+        if (h > 0.31 && h < 0.45) {
             const r = CONFIG.radius + (h * CONFIG.heightScale);
             horses.push(new THREE.Vector3().setFromSphericalCoords(r + 1.0, phi, theta));
         }
     }
+    assets.createGLBHorses(horses);
 
+    //clouds
     for (let i = 0; i < 250; i++) {
         const phi = Math.acos(2 * Math.random() - 1);
         const theta = Math.random() * Math.PI * 2;
         const h = world.getSampledHeight(phi, theta);
 
-        
         const r = CONFIG.radius + (h * CONFIG.heightScale);
         clouds.push(new THREE.Vector3().setFromSphericalCoords(r + (CONFIG.heightScale + (Math.random() * 2.0)), phi, theta));
         
     }
-
-
-    assets.createInstancedTrees(trees);
-    assets.createGLBHouses(houses);
-    assets.createGLBTowers(towers);
-    assets.createGLBBoats(boats);
     assets.createGLBClouds(clouds);
-    assets.createGLBHorses(horses);
+
+
 }
 
 function animate() {
@@ -165,7 +181,7 @@ function createGameMenu() {
 function addBeacon(lat, lon, colorCode) {
     const { phi, theta } = world.getCoords(lat, lon);
     const h = world.getSampledHeight(phi, theta);
-    const r = CONFIG.radius + (h * CONFIG.heightScale)  + 15.0;
+    const r = CONFIG.radius + (h * CONFIG.heightScale)  + 25.0;
     
     const position = new THREE.Vector3().setFromSphericalCoords(r, phi, theta);
     
