@@ -5,18 +5,69 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Three.js Rounded Heightmap World</title>
     <style>
-        body { margin: 0; background: #050505; overflow: hidden; font-family: sans-serif; }
-        #overlay {
-            position: absolute; top: 20px; left: 20px; color: white;
-            background: rgba(0,0,0,0.6); padding: 15px; border-radius: 5px;
-            pointer-events: none;
+        body { margin: 0; background: #020205; overflow: hidden; font-family: 'Segoe UI', Roboto, sans-serif; }
+
+        #game-ui {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 280px;
+            max-height: 80vh;
+            background: rgba(10, 15, 25, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            color: white;
+            overflow-y: auto;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
         }
+
+        .continent-section { margin-bottom: 25px; }
+
+        .continent-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0.6;
+            margin-bottom: 10px;
+            display: block;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 5px;
+        }
+
+        .loc-button {
+            display: block;
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            margin: 5px 0;
+            text-align: left;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .loc-button:hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateX(5px);
+            border-left: 3px solid #00ccff;
+        }
+
+        /* Custom Scrollbar */
+        #game-ui::-webkit-scrollbar { width: 4px; }
+        #game-ui::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
 <body>
+    
     <div id="overlay">
         <strong>Rounded World</strong><br>
-        Use Mouse to Rotate & Zoom
     </div>
 
     <script type="importmap">

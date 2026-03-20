@@ -41,6 +41,7 @@ export class World {
         const waterGeo = new THREE.SphereGeometry(this.waterLevel, 128, 128);
         this.waterMesh = new THREE.Mesh(waterGeo, WaterShaderMaterial);
         this.scene.add(this.waterMesh);
+        
 
         // 3. Atmosphere (NEW IDEA)
         const atmoGeo = new THREE.SphereGeometry(this.radius * 1.2, 64, 64);
@@ -48,10 +49,29 @@ export class World {
         this.scene.add(atmoMesh);
     }
 
+
+    getCoords(lat, lon) {
+        // 1. Convert Lat/Lon to 0-1 range (UV space)
+        let v = (90 - lat) / 180;        // 0 at North, 1 at South
+        let u = (lon + 180) / 360;      // 0 at -180, 1 at 180
+
+        // 2. Reverse your heightmap offset logic (the 0.249)
+        // This ensures the camera lands on the same pixel the heightmap uses
+        u = (u - 0.25);
+        if (u < 0) u += 1;
+
+        // 3. Convert UV back to Phi/Theta for Three.js
+        const phi = v * Math.PI;
+        const theta = u * Math.PI * 2;
+
+        return { phi, theta };
+    }
+
+
     getSampledHeight(phi, theta) {
         if (!this.heightData) return 0;
         let v = phi / Math.PI;
-        let u = (theta / (Math.PI * 2) + 0.249) % 1.0;
+        let u = (theta / (Math.PI * 2) + 0.25) % 1.0;
         const x = Math.floor(u * (this.heightData.width - 1));
         const y = Math.floor(v * (this.heightData.height - 1));
         const index = (y * this.heightData.width + x) * 4;
@@ -81,4 +101,5 @@ export class World {
             };
         });
     }
+
 }

@@ -33,7 +33,7 @@ export const TerrainShader = {
                 // --- Climate Math ---
                 // vCustomUv.y goes from 0 (North Pole) to 1 (South Pole)
                 // lat: 0.0 at equator, 1.0 at poles
-                float lat = abs(vCustomUv.y - 0.6) * 2.8;
+                float lat = abs(vCustomUv.y - 0.6) * 3.0;
                 
                 // Colors
                 vec3 sand = vec3(0.8, 0.75, 0.5);
@@ -115,7 +115,7 @@ export const AtmosphereShaderMaterial = new THREE.ShaderMaterial({
     side: THREE.BackSide,
     transparent: true,
     uniforms: {
-        uColor: { value: new THREE.Color(0x4488ff) }
+        uColor: { value: new THREE.Color(0x3388cc) }
     },
     vertexShader: `
         varying vec3 vNormal;
@@ -129,7 +129,7 @@ export const AtmosphereShaderMaterial = new THREE.ShaderMaterial({
         uniform vec3 uColor;
         void main() {
             // Using the normal to create a soft halo
-            float intensity = pow(0.6 - dot(vNormal, vec3(0, 0, 1.0)), 2.0);
+            float intensity = pow(0.6 - dot(vNormal, vec3(0, 0, 1.0)), 2.15);
             gl_FragColor = vec4(uColor, intensity);
         }
     `

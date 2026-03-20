@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 export class AssetManager {
     constructor(scene) {
@@ -22,9 +23,12 @@ export class AssetManager {
         this.scene.add(mesh);
     }
 
+    
+
+
     createInstancedHouses(positions) {
         if (positions.length === 0) return;
-
+        
         const bodyGeo = new THREE.BoxGeometry(4.5, 3.0, 4.5);
         bodyGeo.translate(0, 0.75, 0);
         const material = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
@@ -32,6 +36,70 @@ export class AssetManager {
 
         this._populateInstances(mesh, positions);
         this.scene.add(mesh);
+    }
+
+    async createGLBHouses(positions) {
+        const loader = new GLTFLoader();
+        const { scene } = await loader.loadAsync('world/models/LHouse.glb');
+    
+        // 1. Extract the actual Mesh from the GLB scene
+        let sourceMesh;
+        scene.traverse(child => {
+            if (child.isMesh) sourceMesh = child;
+        });
+    
+        // 2. Create the InstancedMesh (Geometry, Material, Count)
+        const count = positions.length;
+        const iMesh = new THREE.InstancedMesh(sourceMesh.geometry, sourceMesh.material, count);
+    
+        // 3. Populate matrices
+        const dummy = new THREE.Object3D();
+        const up = new THREE.Vector3(0, 1, 0);
+    
+        positions.forEach((pos, i) => {
+            dummy.position.copy(pos);
+            
+            // Orient to sphere normal
+            const normal = pos.clone().normalize();
+            dummy.quaternion.setFromUnitVectors(up, normal);
+            
+            dummy.updateMatrix();
+            iMesh.setMatrixAt(i, dummy.matrix);
+        });
+    
+        this.scene.add(iMesh);
+    }
+
+    async createGLBTowers(positions) {
+        const loader = new GLTFLoader();
+        const { scene } = await loader.loadAsync('world/models/ChessTower.glb');
+    
+        // 1. Extract the actual Mesh from the GLB scene
+        let sourceMesh;
+        scene.traverse(child => {
+            if (child.isMesh) sourceMesh = child;
+        });
+    
+        // 2. Create the InstancedMesh (Geometry, Material, Count)
+        const count = positions.length;
+        const iMesh = new THREE.InstancedMesh(sourceMesh.geometry, sourceMesh.material, count);
+    
+        // 3. Populate matrices
+        const dummy = new THREE.Object3D();
+        const up = new THREE.Vector3(0, 1, 0);
+    
+        positions.forEach((pos, i) => {
+            dummy.position.copy(pos);
+            
+            // Orient to sphere normal
+            const normal = pos.clone().normalize();
+            dummy.quaternion.setFromUnitVectors(up, normal);
+            
+            dummy.updateMatrix();
+            iMesh.setMatrixAt(i, dummy.matrix);
+        });
+    
+        this.scene.add(iMesh);
     }
 
     _populateInstances(mesh, positions) {
