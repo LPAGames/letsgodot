@@ -48,6 +48,9 @@ function populateWorld() {
     const trees = [];
     const houses = [];
     const towers = [];
+    const boats = [];
+    const clouds = [];
+    const horses = [];
     
     for (let i = 0; i < 20000; i++) {
         const phi = Math.acos(2 * Math.random() - 1);
@@ -66,9 +69,48 @@ function populateWorld() {
             towers.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
         }
     }
+
+    for (let i = 0; i < 250; i++) {
+        const phi = Math.acos(2 * Math.random() - 1);
+        const theta = Math.random() * Math.PI * 2;
+        const h = world.getSampledHeight(phi, theta);
+
+        if (h == 0.0) {
+            const r = CONFIG.radius + (h * CONFIG.heightScale);
+            boats.push(new THREE.Vector3().setFromSphericalCoords(r + 3.0, phi, theta));
+        }
+    }
+
+    //horses
+    for (let i = 0; i < 1000; i++) {
+        const phi = Math.acos(2 * Math.random() - 1);
+        const theta = Math.random() * Math.PI * 2;
+        const h = world.getSampledHeight(phi, theta);
+
+        if (h > 0.1 && h < 0.45) {
+            const r = CONFIG.radius + (h * CONFIG.heightScale);
+            horses.push(new THREE.Vector3().setFromSphericalCoords(r + 1.0, phi, theta));
+        }
+    }
+
+    for (let i = 0; i < 250; i++) {
+        const phi = Math.acos(2 * Math.random() - 1);
+        const theta = Math.random() * Math.PI * 2;
+        const h = world.getSampledHeight(phi, theta);
+
+        
+        const r = CONFIG.radius + (h * CONFIG.heightScale);
+        clouds.push(new THREE.Vector3().setFromSphericalCoords(r + (CONFIG.heightScale + (Math.random() * 2.0)), phi, theta));
+        
+    }
+
+
     assets.createInstancedTrees(trees);
     assets.createGLBHouses(houses);
     assets.createGLBTowers(towers);
+    assets.createGLBBoats(boats);
+    assets.createGLBClouds(clouds);
+    assets.createGLBHorses(horses);
 }
 
 function animate() {
