@@ -16,6 +16,7 @@ let scene, camera, renderer, controls, world, assets, sun;
 const clock = new THREE.Clock();
 
 async function init() {
+    
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 10000);
     camera.position.set(0, 0, CONFIG.radius * 2);
@@ -55,7 +56,7 @@ function populateWorld() {
     const horses = [];
 
     
-    for (let i = 0; i < 20000; i++) {
+    for (let i = 0; i < 15000; i++) {
         const phi = Math.acos(2 * Math.random() - 1);
         const theta = Math.random() * Math.PI * 2;
         const h = world.getSampledHeight(phi, theta);
@@ -63,7 +64,7 @@ function populateWorld() {
         // Using our height logic from the shader
         if (h > 0.31 && h < 0.45) {
             const r = CONFIG.radius + (h * CONFIG.heightScale);
-            if (i % 2 === 0) 
+            if (Math.random()> 0.3) 
                 trees.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
             else
                 stones.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));

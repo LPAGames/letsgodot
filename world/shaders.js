@@ -3,8 +3,8 @@ import * as THREE from 'three';
 export const TerrainShader = {
     inject: (material) => {
         material.onBeforeCompile = (shader) => {
-            shader.uniforms.uSnowLevel = { value: 0.8 };
-            shader.uniforms.uRockLevel = { value: 0.65 };
+            shader.uniforms.uSnowLevel = { value: 0.85 };
+            shader.uniforms.uRockLevel = { value: 0.7 };
             shader.uniforms.uSandLevel = { value: 0.5 };
 
             // 1. VERTEX SHADER: Pass UVs to Fragment and sample height
