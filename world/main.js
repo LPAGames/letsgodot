@@ -5,9 +5,9 @@ import { World } from './World.js';
 import { WORLD_DATA } from './locations.js';
 
 const CONFIG = {
-    radius: 1250,
+    radius: 1100,
     heightScale: 50,
-    waterLevel: 1263,
+    waterLevel: 1113,
     resolution: 1024,
     map: 'imgs/topography_2k_2.png'
 };
@@ -46,13 +46,14 @@ async function init() {
 
 function populateWorld() {
     const trees = [];
+    const stones = [];
     const houses = [];
     const towers = [];
 
-    const oaks = [];
     const boats = [];
     const clouds = [];
     const horses = [];
+
     
     for (let i = 0; i < 20000; i++) {
         const phi = Math.acos(2 * Math.random() - 1);
@@ -62,7 +63,10 @@ function populateWorld() {
         // Using our height logic from the shader
         if (h > 0.31 && h < 0.45) {
             const r = CONFIG.radius + (h * CONFIG.heightScale);
-            trees.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
+            if (i % 2 === 0) 
+                trees.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
+            else
+                stones.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
         } else if (h >= 0.4 && h < 0.55) {
             const r = CONFIG.radius + (h * CONFIG.heightScale);
             houses.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
@@ -71,22 +75,22 @@ function populateWorld() {
             towers.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
         }
     }
-    assets.createInstancedTrees(trees);
-    assets.createGLBHouses(houses);
-    assets.createGLBTowers(towers);
-
-    //oaks
-    for (let i = 0; i < 300; i++) {
-        const phi = Math.acos(2 * Math.random() - 1);
-        const theta = Math.random() * Math.PI * 2;
-        const h = world.getSampledHeight(phi, theta);
-
-        if (h > 0.31 && h <= 0.6) {
-            const r = CONFIG.radius + (h * CONFIG.heightScale);
-            oaks.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
-        }
-    }
-    assets.createGLBOaks(oaks);
+    assets.addStaticBatch('oaks','./world/models/Oak.glb', trees,{
+        randomRotation: Math.PI * 2,
+        scale: 0.7
+    });
+    assets.addStaticBatch('stones', './world/models/Stone.glb',stones,{
+        randomRotation: Math.PI * 2,
+        scale: 2.5
+    });
+    assets.addStaticBatch('houses','./world/models/LHouse.glb', houses,{
+        randomRotation: Math.PI * 2,
+        scale: 1.5
+    });
+    assets.addStaticBatch('towers','./world/models/ChessTower.glb', towers,{
+        randomRotation: Math.PI * 2,
+        scale: 1.0
+    });
 
     //boats
     for (let i = 0; i < 250; i++) {
@@ -99,7 +103,10 @@ function populateWorld() {
             boats.push(new THREE.Vector3().setFromSphericalCoords(r + 12.0, phi, theta));
         }
     }
-    assets.createGLBBoats(boats);
+    assets.addStaticBatch('boats','./world/models/Boat.glb', boats,{
+        randomRotation: Math.PI * 2,
+        scale: 1.0
+    });
 
     //horses
     for (let i = 0; i < 1000; i++) {
@@ -112,7 +119,11 @@ function populateWorld() {
             horses.push(new THREE.Vector3().setFromSphericalCoords(r + 1.0, phi, theta));
         }
     }
-    assets.createGLBHorses(horses);
+    assets.addStaticBatch('horses','./world/models/Horse.glb', horses,{
+        randomRotation: Math.PI * 2,
+        scale: 1.5
+    });
+
 
     //clouds
     for (let i = 0; i < 250; i++) {
@@ -124,19 +135,38 @@ function populateWorld() {
         clouds.push(new THREE.Vector3().setFromSphericalCoords(r + (CONFIG.heightScale + (Math.random() * 2.0)), phi, theta));
         
     }
-    assets.createGLBClouds(clouds);
+    assets.addStaticBatch('clouds','./world/models/Cloud.glb', clouds,{
+        randomRotation: Math.PI * 2,
+        scale: 5.0
+    });
 
 
+    //dragons
+    for (let i = 0; i < 10; i++) {
+        const phi = Math.acos(2 * Math.random() - 1);
+        const theta = Math.random() * Math.PI * 2;
+        const h = world.getSampledHeight(phi, theta);
+
+        const r = CONFIG.radius + (h * CONFIG.heightScale);
+        //dragons.push(new THREE.Vector3().setFromSphericalCoords(r + (CONFIG.heightScale + (Math.random() * 2.0)), phi, theta));
+        const dragon = assets.spawnAnimated('./world/models/Dragon.glb', new THREE.Vector3().setFromSphericalCoords(r + (CONFIG.heightScale + (Math.random() * 2.0)), phi, theta));
+        
+    }
+    /* assets.actors.forEach(element => {
+        element.play('Armature|Armature|Fly', 0.1);
+    }); */
 }
 
 function animate() {
     requestAnimationFrame(animate);
+    const deltaTime = clock.getDelta();
     const delta = clock.getElapsedTime();
     
     const time = clock.getElapsedTime() * 0.1; // Speed
     sun.position.x = Math.cos(time) * 1000;
     sun.position.z = Math.sin(time) * 1000;
 
+    assets.update(deltaTime);
     // Update Water Uniforms
     /* world.waterMesh.material.uniforms.uTime.value = delta;
     
