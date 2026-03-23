@@ -53,6 +53,7 @@ function populateWorld() {
 
     const boats = [];
     const clouds = [];
+    const flyBoats = [];
     const horses = [];
 
     
@@ -139,6 +140,21 @@ function populateWorld() {
     assets.addStaticBatch('clouds','./world/models/Cloud.glb', clouds,{
         randomRotation: Math.PI * 2,
         scale: 5.0
+    });
+
+    //fly boats
+    for (let i = 0; i < 150; i++) {
+        const phi = Math.acos(2 * Math.random() - 1);
+        const theta = Math.random() * Math.PI * 2;
+        const h = world.getSampledHeight(phi, theta);
+
+        const r = CONFIG.radius + (h * CONFIG.heightScale);
+        flyBoats.push(new THREE.Vector3().setFromSphericalCoords(r + (CONFIG.heightScale + (Math.random() * 2.0)), phi, theta));
+        
+    }
+    assets.addStaticBatch('flyboats','./world/models/FlyBoat.glb', flyBoats,{
+        randomRotation: Math.PI * 2,
+        scale: 1.0
     });
 
 
