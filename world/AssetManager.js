@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { LoopRepeat, NormalAnimationBlendMode } from 'three';
+import { LoopRepeat } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
@@ -7,15 +7,16 @@ export class AssetManager {
     constructor(scene) {
         this.scene = scene;
         this.loader = new GLTFLoader();
+        this.cache = new Map();
         
-        this.cache = new Map();         // Raw GLTF data
-        this.staticBatches = new Map(); // InstancedMeshes
-        this.actors = [];               // Active animated models
+        this.staticBatches = [];  // Won't move
+        this.dynamicBatches = []; // Will move every frame
+        this.actors = [];         // Unique animated models
+        
+        this._tempObj = new THREE.Object3D(); // Reusable dummy for math
+        this._up = new THREE.Vector3(0, 1, 0);
     }
 
-    /**
-     * PRIVATE: Load and cache GLB files
-     */
     async _load(url) {
         if (!this.cache.has(url)) {
             const gltf = await this.loader.loadAsync(url);
@@ -25,117 +26,128 @@ export class AssetManager {
     }
 
     /**
-     * STATIC BATCHING (Houses, Trees, Rocks)
-     * High performance, 1 draw call, no individual animations
+     * Helper: Aligns an object to look "up" from the center of a sphere
      */
-    async addStaticBatch(id, url, positions, config = {}) {
+    _alignToSphere(obj, pos) {
+        obj.position.copy(pos);
+        const normal = pos.clone().normalize();
+        obj.quaternion.setFromUnitVectors(this._up, normal);
+    }
+
+    /**
+     * Create a Batch (Static or Moving)
+     */
+    async addBatch(id, url, positions, config = {}) {
         const gltf = await this._load(url);
         let sourceMesh;
         gltf.scene.traverse(c => { if (c.isMesh && !sourceMesh) sourceMesh = c; });
 
-        const mesh = new THREE.InstancedMesh(sourceMesh.geometry, sourceMesh.material, positions.length);
-        const dummy = new THREE.Object3D();
-        const up = new THREE.Vector3(0, 1, 0);
-
-        positions.forEach((pos, i) => {
-            dummy.position.copy(pos);
-            const normal = pos.clone().normalize();
-            dummy.quaternion.setFromUnitVectors(up, normal);
-            if (config.randomRotation) dummy.rotateY(Math.random() * Math.PI * 2);
-            dummy.scale.setScalar(config.scale || 1);
-            dummy.updateMatrix();
-            mesh.setMatrixAt(i, dummy.matrix);
+        const count = positions.length;
+        const mesh = new THREE.InstancedMesh(sourceMesh.geometry, sourceMesh.material, count);
+        
+        // We store the 'state' of each instance here so we don't have to read matrices
+        const instances = positions.map(pos => {
+            const data = { 
+                pos: pos.clone(), 
+                rotY: Math.random() * Math.PI * 2,
+                scale: config.scale || 1 
+            };
+            return data;
         });
 
+        const batchObj = { id, mesh, instances, speed: config.speed || 0 };
+        
+        if (batchObj.speed > 0) {
+            this.dynamicBatches.push(batchObj);
+        } else {
+            // Apply static positions once
+            instances.forEach((data, i) => {
+                this._alignToSphere(this._tempObj, data.pos);
+                this._tempObj.rotateY(data.rotY);
+                this._tempObj.scale.setScalar(data.scale);
+                this._tempObj.updateMatrix();
+                mesh.setMatrixAt(i, this._tempObj.matrix);
+            });
+            this.staticBatches.push(batchObj);
+        }
+
         this.scene.add(mesh);
-        this.staticBatches.set(id, mesh);
-        return mesh;
+        return batchObj;
     }
 
     /**
-     * ANIMATED MODELS (Dragons, NPCs, Players)
-     * Each one is unique and can play different animations
+     * Spawn an Animated Actor
      */
-    async spawnAnimated(url, position) {
+    async spawnActor(url, pos, config = {}) {
         const gltf = await this._load(url);
-        
-        // 1. Correctly clone an animated model using SkeletonUtils
         const model = SkeletonUtils.clone(gltf.scene);
-        if (position) model.position.copy(position);
+        
+        this._alignToSphere(model, pos);
+        model.scale.setScalar(config.scale || 1);
         this.scene.add(model);
-        const normal = position.clone().normalize();
-        const up = new THREE.Vector3(0, 1, 0);
-        model.quaternion.setFromUnitVectors(up, normal);
-        model.scale.setScalar(15.0);
 
-        // 2. Set up the Animation System for this specific instance
         const mixer = new THREE.AnimationMixer(model);
         const actions = {};
-
         
-        // Map animation names to actions (e.g., actor.actions['Run'].play())
         gltf.animations.forEach(clip => {
-            if (clip.name.includes('Armature|Armature|Fly'))
-            {
-                mixer.clipAction(clip).loop = LoopRepeat;
-                mixer.clipAction(clip).blendMode = NormalAnimationBlendMode;
-                mixer.clipAction(clip).play();
-            }
-
-            actions[clip.name] = mixer.clipAction(clip);
+            // Store by name, but also lowercase for easy searching
+            actions[clip.name.toLowerCase()] = mixer.clipAction(clip);
+            //mixer.clipAction(clip).loop = LoopRepeat;
         });
 
-        // 3. Create the Actor object
+        
+
         const actor = {
-            model: model,
-            mixer: mixer,
-            actions: actions,
-            currentAction: null,
-
-            // Helper to change animations with a smooth fade
-            play: function(name, duration = 0.5) {
-                const next = this.actions[name];
-                if (!next) return console.warn(`Animation ${name} not found`);
-                
-                if (this.currentAction && this.currentAction !== next) {
-                    this.currentAction.fadeOut(duration);
-                }
-                
-                next.reset().fadeIn(duration).play();
-                this.currentAction = next;
-            },
-
-            destroy: () => {
-                this.scene.remove(model);
-                // Clean up references in the manager
-                this.actors = this.actors.filter(a => a !== actor);
+            model, mixer, actions, 
+            speed: config.speed || 0,
+            
+            // Flexible play: assets.play(actor, 'fly') 
+            play: (name) => {
+                const key = Object.keys(actions).find(k => k.includes(name.toLowerCase()));
+                if (key) actions[key].reset().fadeIn(0.5).play();
             }
         };
 
+        actor.play('fly');
 
         this.actors.push(actor);
         return actor;
     }
 
-    /**
-     * UPDATE LOOP
-     * Call this in your requestAnimationFrame
-     */
     update(delta) {
-        for (let i = 0; i < this.actors.length; i++) {
-            this.actors[i].mixer.update(delta);
-        }
-    }
+        // 1. Update Unique Animated Actors
+        this.actors.forEach(actor => {
+            actor.mixer.update(delta);
+            if (actor.speed > 0) {
+                actor.model.translateZ(actor.speed * delta);
+                // Keep stuck to sphere surface
+                this._alignToSphere(actor.model, actor.model.position);
+            }
+        });
 
-    /**
-     * CLEANUP
-     */
-    destroyBatch(id) {
-        const batch = this.staticBatches.get(id);
-        if (batch) {
-            this.scene.remove(batch);
-            batch.geometry.dispose();
-            this.staticBatches.delete(id);
-        }
+        // 2. Update Moving Batches (e.g. Clouds, Birds)
+        this.dynamicBatches.forEach(batch => {
+            batch.instances.forEach((data, i) => {
+                // Move the position data
+                this._tempObj.position.copy(data.pos);
+                this._tempObj.quaternion.setFromUnitVectors(this._up, data.pos.clone().normalize());
+                this._tempObj.rotateY(data.rotY);
+                
+                // Move forward
+                this._tempObj.translateZ(batch.speed * delta);
+                
+                // Save new position back to data for next frame
+                data.pos.copy(this._tempObj.position);
+                
+                // Re-align to sphere normal
+                this._alignToSphere(this._tempObj, data.pos);
+                this._tempObj.rotateY(data.rotY);
+                this._tempObj.scale.setScalar(data.scale);
+                
+                this._tempObj.updateMatrix();
+                batch.mesh.setMatrixAt(i, this._tempObj.matrix);
+            });
+            batch.mesh.instanceMatrix.needsUpdate = true;
+        });
     }
 }

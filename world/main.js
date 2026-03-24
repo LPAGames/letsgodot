@@ -6,8 +6,8 @@ import { WORLD_DATA } from './locations.js';
 
 const CONFIG = {
     radius: 1100,
-    heightScale: 50,
-    waterLevel: 1113,
+    heightScale: 35,
+    waterLevel: 1108.5,
     resolution: 1024,
     map: 'imgs/topography_2k_2.png'
 };
@@ -24,24 +24,32 @@ async function init() {
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    
     document.body.appendChild(renderer.domElement);
-
+    
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-
+    controls.dampingFactor = 0.05;
+    controls.minDistance = CONFIG.radius + CONFIG.heightScale + 10.0;
+    controls.maxDistance = CONFIG.radius * 2.5;
+    
     // Initialize World
     world = new World(scene, CONFIG);
     await world.init(CONFIG.map);
-
+    
     // Initialize Assets
     assets = new AssetManager(scene);
     populateWorld();
-
+    
     // Lights
     sun = new THREE.DirectionalLight(0xffffff, 2);
     sun.position.set(1000, 1000, 1000);
+    sun.castShadow = true;
+    sun.shadow.mapSize.width = 2048;
+    sun.shadow.mapSize.height = 2048;
     scene.add(sun, new THREE.AmbientLight(0xffffff, 0.2));
-
+    
     animate();
 }
 
@@ -65,7 +73,7 @@ function populateWorld() {
         // Using our height logic from the shader
         if (h > 0.31 && h < 0.45) {
             const r = CONFIG.radius + (h * CONFIG.heightScale);
-            if (Math.random()> 0.3) 
+            if (Math.random()> 0.25) 
                 trees.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
             else
                 stones.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
@@ -77,20 +85,20 @@ function populateWorld() {
             towers.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
         }
     }
-    assets.addStaticBatch('oaks','./world/models/Oak.glb', trees,{
-        randomRotation: Math.PI * 2,
+    assets.addBatch('oaks','./world/models/Oak.glb', trees,{
+        rotY: Math.PI * 2,
         scale: 0.7
     });
-    assets.addStaticBatch('stones', './world/models/Stone.glb',stones,{
-        randomRotation: Math.PI * 2,
+    assets.addBatch('stones', './world/models/Stone.glb',stones,{
+        rotY: Math.PI * 2,
         scale: 2.5
     });
-    assets.addStaticBatch('houses','./world/models/LHouse.glb', houses,{
-        randomRotation: Math.PI * 2,
+    assets.addBatch('houses','./world/models/LHouse.glb', houses,{
+        rotY: Math.PI * 2,
         scale: 1.5
     });
-    assets.addStaticBatch('towers','./world/models/ChessTower.glb', towers,{
-        randomRotation: Math.PI * 2,
+    assets.addBatch('towers','./world/models/ChessTower.glb', towers,{
+        rotY: Math.PI * 2,
         scale: 1.0
     });
 
@@ -102,11 +110,11 @@ function populateWorld() {
 
         if (h == 0.0) {
             const r = CONFIG.radius + (h * CONFIG.heightScale);
-            boats.push(new THREE.Vector3().setFromSphericalCoords(r + 12.0, phi, theta));
+            boats.push(new THREE.Vector3().setFromSphericalCoords(r + 8.5, phi, theta));
         }
     }
-    assets.addStaticBatch('boats','./world/models/Boat.glb', boats,{
-        randomRotation: Math.PI * 2,
+    assets.addBatch('boats','./world/models/Boat.glb', boats,{
+        rotY: Math.PI * 2,
         scale: 1.0
     });
 
@@ -121,14 +129,14 @@ function populateWorld() {
             horses.push(new THREE.Vector3().setFromSphericalCoords(r + 1.0, phi, theta));
         }
     }
-    assets.addStaticBatch('horses','./world/models/Horse.glb', horses,{
-        randomRotation: Math.PI * 2,
+    assets.addBatch('horses','./world/models/Horse.glb', horses,{
+        rotY: Math.PI * 2,
         scale: 1.5
     });
 
 
     //clouds
-    for (let i = 0; i < 250; i++) {
+    for (let i = 0; i < 200; i++) {
         const phi = Math.acos(2 * Math.random() - 1);
         const theta = Math.random() * Math.PI * 2;
         const h = world.getSampledHeight(phi, theta);
@@ -137,13 +145,14 @@ function populateWorld() {
         clouds.push(new THREE.Vector3().setFromSphericalCoords(r + (CONFIG.heightScale + (Math.random() * 2.0)), phi, theta));
         
     }
-    assets.addStaticBatch('clouds','./world/models/Cloud.glb', clouds,{
-        randomRotation: Math.PI * 2,
-        scale: 5.0
+    assets.addBatch('clouds','./world/models/Cloud.glb', clouds,{
+        rotY: Math.PI * 2,
+        scale: 5.0,
+        speed: 5.0
     });
 
     //fly boats
-    for (let i = 0; i < 150; i++) {
+    for (let i = 0; i < 100; i++) {
         const phi = Math.acos(2 * Math.random() - 1);
         const theta = Math.random() * Math.PI * 2;
         const h = world.getSampledHeight(phi, theta);
@@ -152,9 +161,10 @@ function populateWorld() {
         flyBoats.push(new THREE.Vector3().setFromSphericalCoords(r + (CONFIG.heightScale + (Math.random() * 2.0)), phi, theta));
         
     }
-    assets.addStaticBatch('flyboats','./world/models/FlyBoat.glb', flyBoats,{
-        randomRotation: Math.PI * 2,
-        scale: 1.0
+    assets.addBatch('flyboats','./world/models/FlyBoat.glb', flyBoats,{
+        rotY: Math.PI * 2,
+        scale: 0.9,
+        speed: 10.0
     });
 
 
@@ -166,12 +176,11 @@ function populateWorld() {
 
         const r = CONFIG.radius + (h * CONFIG.heightScale);
         //dragons.push(new THREE.Vector3().setFromSphericalCoords(r + (CONFIG.heightScale + (Math.random() * 2.0)), phi, theta));
-        const dragon = assets.spawnAnimated('./world/models/Dragon.glb', new THREE.Vector3().setFromSphericalCoords(r + (CONFIG.heightScale + (Math.random() * 2.0)), phi, theta));
-        
+        const dragon = assets.spawnActor('./world/models/Dragon.glb', new THREE.Vector3().setFromSphericalCoords(r + (CONFIG.heightScale + (Math.random() * 2.0)), phi, theta), {
+            speed: 20.0,
+            scale: 10.0
+        });
     }
-    /* assets.actors.forEach(element => {
-        element.play('Armature|Armature|Fly', 0.1);
-    }); */
 }
 
 function animate() {
@@ -184,11 +193,6 @@ function animate() {
     sun.position.z = Math.sin(time) * 1000;
 
     assets.update(deltaTime);
-    // Update Water Uniforms
-    /* world.waterMesh.material.uniforms.uTime.value = delta;
-    
-    // Make the sparkles follow the sun light
-    world.waterMesh.material.uniforms.uSunDirection.value.copy(sun.position).normalize(); */
 
     world.update(delta); // Updates the water shader
     controls.update();

@@ -77,7 +77,7 @@ export const TerrainShader = {
 export const WaterShaderMaterial = new THREE.ShaderMaterial({
     uniforms: {
         uTime: { value: 0 },
-        uColor: { value: new THREE.Color(0x0044ff) }
+        uColor: { value: new THREE.Color(0x0066ff) }
     },
     transparent: true,
     vertexShader: `
@@ -129,7 +129,7 @@ export const AtmosphereShaderMaterial = new THREE.ShaderMaterial({
         uniform vec3 uColor;
         void main() {
             // Using the normal to create a soft halo
-            float intensity = pow(0.6 - dot(vNormal, vec3(0, 0, 1.0)), 2.15);
+            float intensity = pow(0.7 - dot(vNormal, vec3(0, 0, 1.0)), 2.0);
             gl_FragColor = vec4(uColor, intensity);
         }
     `
