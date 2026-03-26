@@ -50,7 +50,8 @@ export class AssetManager {
             const data = { 
                 pos: pos.clone(), 
                 rotY: Math.random() * Math.PI * 2,
-                scale: config.scale || 1 
+                scale: config.scale || 1,
+                randomScale: config.randomScale || 1
             };
             return data;
         });
@@ -64,7 +65,8 @@ export class AssetManager {
             instances.forEach((data, i) => {
                 this._alignToSphere(this._tempObj, data.pos);
                 this._tempObj.rotateY(data.rotY);
-                this._tempObj.scale.setScalar(data.scale);
+                if (data.randomScale > 1) this._tempObj.scale.setScalar(data.scale + (Math.random() * data.randomScale));
+                else this._tempObj.scale.setScalar(data.scale);
                 this._tempObj.updateMatrix();
                 mesh.setMatrixAt(i, this._tempObj.matrix);
             });

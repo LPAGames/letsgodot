@@ -1,19 +1,21 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import Stats from 'three/addons/libs/stats.module.js';
 import { AssetManager } from './AssetManager.js';
 import { World } from './World.js';
 import { WORLD_DATA } from './locations.js';
 
 const CONFIG = {
-    radius: 1100,
+    radius: 800,
     heightScale: 35,
-    waterLevel: 1108.5,
-    resolution: 1024,
+    waterLevel: 808.5,
+    resolution: 2048,
     map: 'imgs/topography_2k_2.png'
 };
 
-let scene, camera, renderer, controls, world, assets, sun;
+let scene, camera, renderer, controls, world, assets, sun, stats;
 const clock = new THREE.Clock();
+
 
 async function init() {
     
@@ -41,6 +43,9 @@ async function init() {
     // Initialize Assets
     assets = new AssetManager(scene);
     populateWorld();
+
+    stats = new Stats();
+    document.body.appendChild(stats.dom);
     
     // Lights
     sun = new THREE.DirectionalLight(0xffffff, 2);
@@ -54,15 +59,43 @@ async function init() {
 }
 
 function populateWorld() {
-    const trees = [];
+    const clouds = [];
+    const oaks = [];
+    const pines = [];
+    const palmTrees = [];
     const stones = [];
+
     const houses = [];
+    const temples = [];
+    const wonders = [];
     const towers = [];
 
     const boats = [];
-    const clouds = [];
     const flyBoats = [];
+
     const horses = [];
+    const knights = [];
+
+
+    const tc1s = [];
+    const tc2s = [];
+
+    //clouds
+    for (let i = 0; i < 125; i++) {
+        const phi = Math.acos(2 * Math.random() - 1);
+        const theta = Math.random() * Math.PI * 2;
+        const h = world.getSampledHeight(phi, theta);
+
+        const r = CONFIG.radius + (h * CONFIG.heightScale);
+        clouds.push(new THREE.Vector3().setFromSphericalCoords(r + (CONFIG.heightScale + (Math.random() * 2.0)), phi, theta));
+        
+    }
+    assets.addBatch('clouds','./world/models/Cloud.glb', clouds,{
+        rotY: Math.PI * 2,
+        randomScale: 10.5,
+        scale: 5.0,
+        speed: 5.0
+    });
 
     
     for (let i = 0; i < 15000; i++) {
@@ -71,31 +104,68 @@ function populateWorld() {
         const h = world.getSampledHeight(phi, theta);
 
         // Using our height logic from the shader
-        if (h > 0.31 && h < 0.45) {
+        if (h > 0.25 && h < 0.325) {
             const r = CONFIG.radius + (h * CONFIG.heightScale);
-            if (Math.random()> 0.25) 
-                trees.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
+            palmTrees.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
+        } else if (h >= 0.325 && h < 0.6) {
+            const r = CONFIG.radius + (h * CONFIG.heightScale);
+            const rand = Math.random();
+            if (rand >= 0.45)
+                oaks.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
+            else if (rand >= 0.15)
+                pines.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
+            else if (rand < 0.015)
+                tc1s.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
+            else if (rand < 0.03)
+                tc2s.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
+            else if (rand < 0.045)
+                houses.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
+            else if (rand < 0.06)
+                temples.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
+            else if (rand < 0.075)
+                wonders.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
             else
                 stones.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
-        } else if (h >= 0.4 && h < 0.55) {
-            const r = CONFIG.radius + (h * CONFIG.heightScale);
-            houses.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
-        }  else if (h >= 0.55 && h < 0.6) {
+        }  else if (h >= 0.6 && h < 0.65) {
             const r = CONFIG.radius + (h * CONFIG.heightScale);
             towers.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
         }
     }
-    assets.addBatch('oaks','./world/models/Oak.glb', trees,{
+    assets.addBatch('palms','./world/models/nature/PalmTree.glb', palmTrees,{
         rotY: Math.PI * 2,
-        scale: 0.7
+        scale: 1.5
     });
-    assets.addBatch('stones', './world/models/Stone.glb',stones,{
+    assets.addBatch('oaks','./world/models/nature/Oak.glb', oaks,{
+        rotY: Math.PI * 2,
+        scale: 1.5
+    });
+    assets.addBatch('pines','./world/models/nature/Pine.glb', pines,{
+        rotY: Math.PI * 2,
+        scale: 1.5
+    });
+    assets.addBatch('tc1s','./world/models/TownCenter1Age.glb', tc1s,{
+        rotY: Math.PI * 2,
+        scale: 3.5
+    });
+    assets.addBatch('tc2s','./world/models/TownCenter2Age.glb', tc2s,{
+        rotY: Math.PI * 2,
+        scale: 3.5
+    });
+    assets.addBatch('stones', './world/models/nature/Stone.glb',stones,{
         rotY: Math.PI * 2,
         scale: 2.5
     });
     assets.addBatch('houses','./world/models/LHouse.glb', houses,{
         rotY: Math.PI * 2,
-        scale: 1.5
+        scale: 2.5
+    });
+    assets.addBatch('temples','./world/models/TempleSecondAge3.glb', temples,{
+        rotY: Math.PI * 2,
+        scale: 4.5
+    });
+    assets.addBatch('wonders','./world/models/WonderSecondAge3.glb', wonders,{
+        rotY: Math.PI * 2,
+        scale: 4.0
     });
     assets.addBatch('towers','./world/models/ChessTower.glb', towers,{
         rotY: Math.PI * 2,
@@ -103,7 +173,7 @@ function populateWorld() {
     });
 
     //boats
-    for (let i = 0; i < 250; i++) {
+    for (let i = 0; i < 200; i++) {
         const phi = Math.acos(2 * Math.random() - 1);
         const theta = Math.random() * Math.PI * 2;
         const h = world.getSampledHeight(phi, theta);
@@ -119,37 +189,32 @@ function populateWorld() {
     });
 
     //horses
-    for (let i = 0; i < 1000; i++) {
+    for (let i = 0; i < 1500; i++) {
         const phi = Math.acos(2 * Math.random() - 1);
         const theta = Math.random() * Math.PI * 2;
         const h = world.getSampledHeight(phi, theta);
-
+        
         if (h > 0.31 && h < 0.45) {
+            const rand = Math.random();
             const r = CONFIG.radius + (h * CONFIG.heightScale);
-            horses.push(new THREE.Vector3().setFromSphericalCoords(r + 1.0, phi, theta));
+            if(rand >= 0.5)
+                horses.push(new THREE.Vector3().setFromSphericalCoords(r + 1.0, phi, theta));
+            else
+                knights.push(new THREE.Vector3().setFromSphericalCoords(r + 1.0, phi, theta));
         }
     }
     assets.addBatch('horses','./world/models/Horse.glb', horses,{
         rotY: Math.PI * 2,
-        scale: 1.5
+        scale: 1.25
     });
 
-
-    //clouds
-    for (let i = 0; i < 200; i++) {
-        const phi = Math.acos(2 * Math.random() - 1);
-        const theta = Math.random() * Math.PI * 2;
-        const h = world.getSampledHeight(phi, theta);
-
-        const r = CONFIG.radius + (h * CONFIG.heightScale);
-        clouds.push(new THREE.Vector3().setFromSphericalCoords(r + (CONFIG.heightScale + (Math.random() * 2.0)), phi, theta));
-        
-    }
-    assets.addBatch('clouds','./world/models/Cloud.glb', clouds,{
+    assets.addBatch('knights','./world/models/Knight.glb', knights,{
         rotY: Math.PI * 2,
-        scale: 5.0,
-        speed: 5.0
+        scale: 1.0
     });
+
+
+    
 
     //fly boats
     for (let i = 0; i < 100; i++) {
@@ -169,7 +234,7 @@ function populateWorld() {
 
 
     //dragons
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 15; i++) {
         const phi = Math.acos(2 * Math.random() - 1);
         const theta = Math.random() * Math.PI * 2;
         const h = world.getSampledHeight(phi, theta);
@@ -191,7 +256,8 @@ function animate() {
     const time = clock.getElapsedTime() * 0.1; // Speed
     sun.position.x = Math.cos(time) * 1000;
     sun.position.z = Math.sin(time) * 1000;
-
+    
+    stats.update();
     assets.update(deltaTime);
 
     world.update(delta); // Updates the water shader
