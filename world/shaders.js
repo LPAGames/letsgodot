@@ -33,7 +33,7 @@ export const TerrainShader = {
                 // --- Climate Math ---
                 // vCustomUv.y goes from 0 (North Pole) to 1 (South Pole)
                 // lat: 0.0 at equator, 1.0 at poles
-                float lat = abs(vCustomUv.y - 0.6) * 3.0;
+                float lat = abs(vCustomUv.y - 0.57) * 2.9;
                 
                 // Colors
                 vec3 sand = vec3(0.8, 0.75, 0.5);

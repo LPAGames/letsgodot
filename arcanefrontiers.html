@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aethelsphere: Arcane Marches</title>
+    <!-- Importing cool fonts for a medieval/fantasy vibe -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="world/af/general.css">
+</head>
+<body>
+
+    <div id="app-wrapper">
+        <!-- TOP: Resources -->
+        <div id="top-bar" class="panel">
+            <div class="resource"><div class="res-icon icon-wood"></div> Wood: <span id="r-wood">200</span></div>
+            <div class="resource"><div class="res-icon icon-stone"></div> Stone: <span id="r-stone">100</span></div>
+            <div class="resource"><div class="res-icon icon-gold"></div> Gold: <span id="r-gold">50</span></div>
+            <div class="resource"><div class="res-icon icon-mana"></div> Mana: <span id="r-mana">0</span></div>
+            <div style="color: var(--border-gold); font-family: 'Cinzel';">Day <span id="day-counter">1</span></div>
+        </div>
+
+        <!-- LEFT: Build Menu -->
+        <div class="panel" id="left-panel">
+            <h3>Architecture</h3>
+            <p style="font-size: 0.8em; color: var(--text-muted);">Expand your influence to harvest nodes.</p>
+            
+            <button class="menu-btn" id="btn-outpost" onclick="setBuildMode('outpost')">
+                <strong>Outpost</strong>
+                <span class="cost-tag">Cost: 750 Wood, 150 Stone | Radius: High</span>
+            </button>
+            <button class="menu-btn" id="btn-tower" onclick="setBuildMode('tower')">
+                <strong>Watchtower</strong>
+                <span class="cost-tag">Cost: 350 Stone, 80 Gold | Def: Physical</span>
+            </button>
+            <button class="menu-btn" id="btn-spire" onclick="setBuildMode('spire')">
+                <strong>Arcane Spire</strong>
+                <span class="cost-tag">Cost: 1500 Stone, 250 Mana, 50 Gold | Def: Magical</span>
+            </button>
+        </div>
+
+        <!-- CENTER: The Canvas Map -->
+        <div id="canvas-container">
+            <canvas id="gameCanvas" width="800" height="500"></canvas>
+        </div>
+
+        <!-- RIGHT: Research / AI status -->
+        <div class="panel" id="right-panel">
+            <h3>Research Arcana</h3>
+            <button class="menu-btn" onclick="logEvent('Not enough Mana to research Draconic Lore.', 'danger')">
+                <strong>Draconic Lore</strong>
+                <span class="cost-tag">Cost: 500 Mana</span>
+            </button>
+            <button class="menu-btn" onclick="logEvent('Not enough Gold for Trade Routes.', 'danger')">
+                <strong>Trade Routes</strong>
+                <span class="cost-tag">Cost: 300 Gold</span>
+            </button>
+
+            <h3 style="margin-top: 30px;">AI Rival Status</h3>
+            <div style="font-size: 0.85em; color: var(--text-muted);">
+                <p>🔴 Duke of Ash: Expanding</p>
+                <p>⚪ High Priest: Fortifying</p>
+            </div>
+        </div>
+
+        <!-- BOTTOM: Event Log -->
+        <div id="event-log" class="panel">
+            <div class="log-entry important">[System] Welcome to the Arcane Marches. Place buildings inside your blue influence zone.</div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. GAME DATA & STATE
+        // ==========================================
+        const state = {
+            resources: { wood: 2000, stone: 350, gold: 50, mana: 0 },
+            tick: 0,
+            buildMode: null
+        };
+
+        let income = { wood: 0, stone: 0, mana: 0, gold: 1 }; // Base gold income
+
+        const BUILDINGS = {
+            keep:    { type: 'keep',    cost: {}, radius: 120, color: '#cba365' },
+            outpost: { type: 'outpost', cost: { wood: 750, stone: 150 }, radius: 100, color: '#e2e8f0' },
+            tower:   { type: 'tower',   cost: { stone: 375, gold: 80 }, radius: 60, color: '#94a3b8' },
+            spire:   { type: 'spire',   cost: { stone: 1500, mana: 250, gold: 50 }, radius: 80, color: '#0ea5e9' }
+        };
+
+        // Arrays holding entities on the map
+        let placedBuildings =[];
+        let resourceNodes =[];
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // ==========================================
+        // 2. INITIALIZATION (Map Generation)
+        // ==========================================
+        function initMap() {
+            // Place the starting Keep in the center
+            placedBuildings.push({
+                x: canvas.width / 2,
+                y: canvas.height / 2,
+                ...BUILDINGS.keep
+            });
+
+            // Randomly scatter Trees (Wood) and Rocks (Stone)
+            for (let i = 0; i < 40; i++) {
+                resourceNodes.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    type: Math.random() > 0.4 ? 'wood' : 'stone',
+                    size: 4 + Math.random() * 4
+                });
+            }
+            
+            // Scatter a few rare Mana nodes
+            for (let i = 0; i < 5; i++) {
+                resourceNodes.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    type: 'mana', size: 6
+                });
+            }
+        }
+
+        // ==========================================
+        // 3. CORE LOGIC & MATH
+        // ==========================================
+        
+        // Checks if a point (mouse click) is inside the radius of ANY existing building
+        function isWithinInfluence(x, y) {
+            return placedBuildings.some(b => {
+                let distance = Math.hypot(x - b.x, y - b.y); // Pythagorean theorem
+                return distance <= b.radius;
+            });
+        }
+
+        function hasResources(costObj) {
+            for (let res in costObj) {
+                if (state.resources[res] < costObj[res]) return false;
+            }
+            return true;
+        }
+
+        function deductResources(costObj) {
+            for (let res in costObj) {
+                state.resources[res] -= costObj[res];
+            }
+            updateUI();
+        }
+
+        // The "Engine Tick" - Runs every 1 second
+        setInterval(() => {
+            state.tick++;
+            
+            // Harvest resources based on map nodes inside influence radii
+            income = { wood: 0, stone: 0, mana: 0, gold: 1 }; // Base gold income
+            
+            resourceNodes.forEach(node => {
+                if (isWithinInfluence(node.x, node.y)) {
+                    income[node.type] += 1;
+                }
+            });
+
+            // Apply income to state
+            state.resources.wood += income.wood;
+            state.resources.stone += income.stone;
+            state.resources.mana += income.mana;
+            state.resources.gold += income.gold;
+            
+            if(state.tick % 60 === 0) {
+                document.getElementById('day-counter').innerText = (state.tick / 60) + 1;
+            }
+
+            updateUI();
+        }, 1000);
+
+        // ==========================================
+        // 4. INTERACTIVITY (Mouse & UI)
+        // ==========================================
+        let mouseX = 0, mouseY = 0;
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+        });
+
+        canvas.addEventListener('click', () => {
+            if (!state.buildMode) return;
+
+            const blueprint = BUILDINGS[state.buildMode];
+
+            if (!isWithinInfluence(mouseX, mouseY)) {
+                logEvent("Cannot build there! Must be within blue influence radius.", "danger");
+                return;
+            }
+
+            if (!hasResources(blueprint.cost)) {
+                logEvent(`Not enough resources for ${state.buildMode}!`, "danger");
+                return;
+            }
+
+            // Build it!
+            deductResources(blueprint.cost);
+            placedBuildings.push({
+                x: mouseX,
+                y: mouseY,
+                ...blueprint
+            });
+            logEvent(`Constructed new ${state.buildMode}. Influence expanded!`);
+            
+            // Turn off build mode
+            state.buildMode = null;
+            document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+        });
+
+        function setBuildMode(type) {
+            state.buildMode = type;
+            document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn-${type}`).classList.add('active');
+            logEvent(`Selected ${type} blueprint. Click inside your radius to place.`);
+        }
+
+        function updateUI() {
+            document.getElementById('r-wood').innerText = state.resources.wood + " (+"+ income.wood + ")";
+            document.getElementById('r-stone').innerText = state.resources.stone + " (+"+ income.stone + ")";
+            document.getElementById('r-gold').innerText = state.resources.gold + " (+"+ income.gold + ")";
+            document.getElementById('r-mana').innerText = state.resources.mana + " (+"+ income.mana + ")";
+        }
+
+        function logEvent(msg, type = "normal") {
+            const log = document.getElementById('event-log');
+            const el = document.createElement('div');
+            el.className = `log-entry ${type}`;
+            el.innerText = `[Day ${(Math.floor(state.tick / 60) + 1)}] ${msg}`;
+            log.appendChild(el);
+            log.scrollTop = log.scrollHeight; // Auto-scroll to bottom
+        }
+
+        // ==========================================
+        // 5. RENDERING (The Visuals)
+        // ==========================================
+        function draw() {
+            // 1. Clear Map
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 2. Draw Influence Radii (The Blue Web)
+            placedBuildings.forEach(b => {
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+                ctx.fillStyle = "rgba(14, 165, 233, 0.15)"; // Transparent mana blue
+                ctx.fill();
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = "rgba(14, 165, 233, 0.4)";
+                ctx.stroke();
+            });
+
+            // 3. Draw Resource Nodes
+            resourceNodes.forEach(node => {
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, node.size, 0, Math.PI * 2);
+                if (node.type === 'wood') ctx.fillStyle = '#22c55e';
+                if (node.type === 'stone') ctx.fillStyle = '#9ca3af';
+                if (node.type === 'mana') {
+                    ctx.fillStyle = '#0ea5e9';
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = '#0ea5e9';
+                }
+                ctx.fill();
+                ctx.shadowBlur = 0; // reset
+            });
+
+            // 4. Draw Placed Buildings
+            placedBuildings.forEach(b => {
+                ctx.fillStyle = b.color;
+                // Keep is bigger, outposts are smaller squares
+                let size = b.type === 'keep' ? 16 : 10; 
+                ctx.fillRect(b.x - size/2, b.y - size/2, size, size);
+                
+                // Draw a small border around buildings
+                ctx.strokeStyle = '#000';
+                ctx.strokeRect(b.x - size/2, b.y - size/2, size, size);
+            });
+
+            // 5. Draw "Ghost" of building currently selected by mouse
+            if (state.buildMode) {
+                const bp = BUILDINGS[state.buildMode];
+                const valid = isWithinInfluence(mouseX, mouseY) && hasResources(bp.cost);
+                
+                ctx.beginPath();
+                ctx.arc(mouseX, mouseY, bp.radius, 0, Math.PI * 2);
+                ctx.fillStyle = valid ? "rgba(34, 197, 94, 0.2)" : "rgba(239, 68, 68, 0.2)"; // Green if valid, Red if invalid
+                ctx.fill();
+                ctx.strokeStyle = valid ? "#22c55e" : "#ef4444";
+                ctx.stroke();
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        // --- START GAME ---
+        initMap();
+        updateUI();
+        draw();
+
+        // ==========================================
+        // 6. FUTURE ARCHITECTURE TO-DO (For your 3D integration)
+        // ==========================================
+        /*
+            TO TRANSLATE THIS TO THREE.JS LATER:
+            
+            1. Replace (x, y) with (lat, lon) or Vector3 coordinates.
+            
+            2. Replace Math.hypot() with Spherical Distance:
+               function getSphericalDistance(vec1, vec2, sphereRadius) {
+                   return sphereRadius * vec1.angleTo(vec2);
+               }
+
+            3. Replace ctx.fillRect() with Scene.add(new THREE.Mesh(geometry, material)).
+            
+            4. Raycaster Setup for Three.js:
+               Instead of `mouseX = e.clientX`, you will use:
+               raycaster.setFromCamera(mouse, camera);
+               const intersects = raycaster.intersectObject(planetSphere);
+               if (intersects.length > 0) {
+                   const pointOnSphere = intersects[0].point;
+                   // Use this point for building placement
+               }
+               
+            5. AI Rival System Hook:
+               function runAITick() {
+                   // Calculate distance from AI Keep to nearest resource
+                   // Issue build command to AI array
+               }
+        */
+    </script>
+</body>
+</html>

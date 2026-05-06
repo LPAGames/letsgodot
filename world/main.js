@@ -6,9 +6,9 @@ import { World } from './World.js';
 import { WORLD_DATA } from './locations.js';
 
 const CONFIG = {
-    radius: 800,
-    heightScale: 35,
-    waterLevel: 808.5,
+    radius: 2500,
+    heightScale: 50,
+    waterLevel: 2510.5,
     resolution: 2048,
     map: 'imgs/topography_2k_2.png'
 };
@@ -98,7 +98,7 @@ function populateWorld() {
     });
 
     
-    for (let i = 0; i < 15000; i++) {
+    for (let i = 0; i < 18000; i++) {
         const phi = Math.acos(2 * Math.random() - 1);
         const theta = Math.random() * Math.PI * 2;
         const h = world.getSampledHeight(phi, theta);
@@ -114,15 +114,15 @@ function populateWorld() {
                 oaks.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
             else if (rand >= 0.15)
                 pines.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
-            else if (rand < 0.015)
+            else if (rand < 0.01)
                 tc1s.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
-            else if (rand < 0.03)
+            else if (rand < 0.02)
                 tc2s.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
-            else if (rand < 0.045)
+            else if (rand < 0.03)
                 houses.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
-            else if (rand < 0.06)
+            else if (rand < 0.04)
                 temples.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
-            else if (rand < 0.075)
+            else if (rand < 0.05)
                 wonders.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
             else
                 stones.push(new THREE.Vector3().setFromSphericalCoords(r, phi, theta));
@@ -161,7 +161,7 @@ function populateWorld() {
     });
     assets.addBatch('temples','./world/models/TempleSecondAge3.glb', temples,{
         rotY: Math.PI * 2,
-        scale: 4.5
+        scale: 3.5
     });
     assets.addBatch('wonders','./world/models/WonderSecondAge3.glb', wonders,{
         rotY: Math.PI * 2,
@@ -234,7 +234,7 @@ function populateWorld() {
 
 
     //dragons
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < 20; i++) {
         const phi = Math.acos(2 * Math.random() - 1);
         const theta = Math.random() * Math.PI * 2;
         const h = world.getSampledHeight(phi, theta);
@@ -248,9 +248,11 @@ function populateWorld() {
     }
 }
 
+let deltaTime = 0.0;
+
 function animate() {
     requestAnimationFrame(animate);
-    const deltaTime = clock.getDelta();
+    deltaTime += clock.getDelta();
     const delta = clock.getElapsedTime();
     
     const time = clock.getElapsedTime() * 0.1; // Speed
@@ -258,7 +260,10 @@ function animate() {
     sun.position.z = Math.sin(time) * 1000;
     
     stats.update();
-    assets.update(deltaTime);
+    if (deltaTime > 0.05) {
+        assets.update(deltaTime);
+        deltaTime = 0.0;
+    }
 
     world.update(delta); // Updates the water shader
     controls.update();

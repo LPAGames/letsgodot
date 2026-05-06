@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Three.js Rounded Heightmap World</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    
     <style>
         body { margin: 0; background: #020205; overflow: hidden; font-family: 'Segoe UI', Roboto, sans-serif; }
 
@@ -24,8 +26,33 @@
             box-shadow: 0 0 30px rgba(0,0,0,0.5);
         }
 
-        .continent-section { margin-bottom: 25px; }
+        #top-bar {
+            grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; font-size: 1em; font-weight: 600;
+            position: absolute;
+            left: 25%;
+            top: 7%;
+            transform: translateY(-50%);
+            width: 45%;
+            max-height: 50vh;
+            background: rgba(10, 15, 25, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            color: white;
+            overflow-y: auto;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+        }
 
+        .resource { display: flex; align-items: center; gap: 8px; }
+        .res-icon { width: 12px; height: 12px; border-radius: 50%; }
+        .icon-wood { background: green; box-shadow: 0 0 5px green; } 
+        .icon-stone { background: gray; box-shadow: 0 0 5px gray; }
+        .icon-gold { background: gold; box-shadow: 0 0 5px gold; } 
+        .icon-mana { background: purple; box-shadow: 0 0 5px purple; }
+        
+        .continent-section { margin-bottom: 25px; }
+        
         .continent-title {
             font-size: 0.8rem;
             text-transform: uppercase;
@@ -51,7 +78,7 @@
             transition: all 0.2s ease;
             border-left: 3px solid transparent;
         }
-
+        
         .loc-button:hover {
             background: rgba(255,255,255,0.15);
             transform: translateX(5px);
@@ -62,12 +89,21 @@
         #game-ui::-webkit-scrollbar { width: 4px; }
         #game-ui::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
     </style>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
 <body>
-    
     <div id="overlay">
         <strong>Rounded World</strong><br>
+        <div id="app-wrapper">
+        </div>
+        <div id="top-bar" class="continent-title">
+            <div class="resource"><div class="res-icon icon-wood"></div> Wood: <span id="r-wood">1000</span></div>
+            <div class="resource"><div class="res-icon icon-stone"></div> Stone: <span id="r-stone">500</span></div>
+            <div class="resource"><div class="res-icon icon-gold"></div> Gold: <span id="r-gold">100</span></div>
+            <div class="resource"><div class="res-icon icon-mana"></div> Mana: <span id="r-mana">20</span></div>
+            <div style="color: var(--border-gold); font-family: 'Cinzel';">Day <span id="day-counter">1</span></div>
+        </div>
     </div>
 
     <script type="importmap">

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aethelsphere: Time & Tech</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="world/af/general.css">
+</head>
+<body>
+
+    <div id="app-wrapper">
+        <div id="top-bar" class="panel">
+            <div class="resource"><div class="res-icon icon-wood"></div> Wood: <span id="r-wood">1000</span></div>
+            <div class="resource"><div class="res-icon icon-stone"></div> Stone: <span id="r-stone">500</span></div>
+            <div class="resource"><div class="res-icon icon-gold"></div> Gold: <span id="r-gold">100</span></div>
+            <div class="resource"><div class="res-icon icon-mana"></div> Mana: <span id="r-mana">20</span></div>
+            <div style="color: var(--border-gold); font-family: 'Cinzel';">Day <span id="day-counter">1</span></div>
+        </div>
+
+        <!-- LEFT: Dynamic Build Menu -->
+        <div class="panel" id="left-panel">
+            <h3>Architecture</h3>
+            <div id="build-container"></div>
+        </div>
+
+        <div id="canvas-container">
+            <canvas id="gameCanvas" width="800" height="500"></canvas>
+        </div>
+
+        <!-- RIGHT: Research & Tasks -->
+        <div class="panel" id="right-panel">
+            <h3>Research Arcana</h3>
+            <div id="research-container"></div>
+
+            <h3 style="margin-top: 20px;">Active Tasks</h3>
+            <div id="task-queue">
+                <div style="color: var(--text-muted); font-size: 0.8em;">No active tasks.</div>
+            </div>
+        </div>
+
+        <div id="event-log" class="panel">
+            <div class="log-entry important">[System] Welcome. Research tech and queue construction to expand.</div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. DATA DICTIONARIES (Blueprints & Tech Tree)
+        // ==========================================
+        const BUILDINGS = {
+            keep:    { name: 'Keep', cost: {}, radius: 120, color: '#cba365', time: 0 },
+            outpost: { name: 'Outpost', cost: { wood: 300, stone: 100 }, upkeep: { wood: 2, stone: 1 } , radius: 100, color: '#e2e8f0', time: 10 },
+            tower: { name: 'Watchtower', cost: { stone: 300 }, upkeep: { gold: 2 }, radius: 60, time: 15 },
+            spire: { name: 'Arcane Spire', cost: { stone: 500 }, upkeep: { mana: 1, gold: 5 }, radius: 80, time: 25 }
+        };
+
+        const RESEARCH = {
+            masonry: { name: 'Masonry', cost: { wood: 500, stone: 200 }, time: 20, desc: 'Unlocks Watchtowers' },
+            arcane:  { name: 'Arcane Mastery', cost: { mana: 50, gold: 100 }, time: 30, desc: 'Unlocks Arcane Spires' },
+            dragons: { name: 'Draconic Lore', cost: { mana: 500 }, time: 60, req: 'arcane', desc: 'Allows Dragon Summoning' }
+        };
+
+        // ==========================================
+        // 2. GAME STATE (Including Tasks & Tech)
+        // ==========================================
+        const state = {
+            resources: { wood: 1000, stone: 500, gold: 100, mana: 20 },
+            unlocked: {}, // e.g., { masonry: true }
+            tasks:[],    // The Queue: { id, type, itemData, progress, maxTime, x, y }
+            tick: 0,
+            buildMode: null
+        };
+
+        let income = { wood: 0, stone: 0, mana: 0, gold: 1 };
+        let upkeepTotal = { wood: 0, stone: 0, gold: 0, mana: 0 };
+        let placedBuildings =[];
+        let resourceNodes =[];
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // ==========================================
+        // 3. INITIALIZATION
+        // ==========================================
+        function initMap() {
+            placedBuildings.push({ x: canvas.width / 2, y: canvas.height / 2, ...BUILDINGS.keep });
+            for (let i = 0; i < 40; i++) resourceNodes.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, type: Math.random() > 0.4 ? 'wood' : 'stone', size: 4 + Math.random() * 4 });
+            for (let i = 0; i < 5; i++) resourceNodes.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, type: 'mana', size: 6 });
+            renderMenus(); // Initial UI draw
+        }
+
+        // ==========================================
+        // 4. LOGIC & TIME TICKS
+        // ==========================================
+        function isWithinInfluence(x, y) {
+            return placedBuildings.some(b => Math.hypot(x - b.x, y - b.y) <= b.radius);
+        }
+
+        function hasResources(costObj) {
+            for (let res in costObj) if (state.resources[res] < costObj[res]) return false;
+            return true;
+        }
+
+        function deductResources(costObj) {
+            for (let res in costObj) state.resources[res] -= costObj[res];
+        }
+
+        function generateUniqueId() { return Math.random().toString(36).substr(2, 9); }
+
+        // THE ENGINE TICK (Time Mechanics)
+        setInterval(() => {
+            state.tick++;
+            
+            upkeepTotal = { wood: 0, stone: 0, gold: 0, mana: 0 };
+
+            // 1. Calculate Passive Income based ONLY on completed buildings
+            income = { wood: 0, stone: 0, mana: 0, gold: 1 };
+            resourceNodes.forEach(node => {
+                if (isWithinInfluence(node.x, node.y)) income[node.type] += 1;
+            });
+
+            state.resources.wood += income.wood;
+            state.resources.stone += income.stone;
+            state.resources.mana += income.mana;
+            state.resources.gold += income.gold;
+            
+            if(state.tick % 60 === 0) document.getElementById('day-counter').innerText = (state.tick / 60) + 1;
+
+            // 2. Process The Task Queue (Construction & Research Time)
+            for (let i = state.tasks.length - 1; i >= 0; i--) {
+                let task = state.tasks[i];
+                task.progress++;
+
+                if (task.progress >= task.maxTime) {
+                    // Task Complete!
+                    if (task.type === 'build') {
+                        placedBuildings.push({ x: task.x, y: task.y, ...BUILDINGS[task.itemKey] });
+                        logEvent(`Construction Complete: ${BUILDINGS[task.itemKey].name}`, 'success');
+                    } else if (task.type === 'research') {
+                        state.unlocked[task.itemKey] = true;
+                        logEvent(`Research Complete: ${RESEARCH[task.itemKey].name}! New tech unlocked.`, 'success');
+                    }
+                    state.tasks.splice(i, 1); // Remove from queue
+                }
+            }
+
+            placedBuildings.forEach(b => {
+                // Find blueprint by matching name
+                let bpKey = Object.keys(BUILDINGS).find(k => BUILDINGS[k].name === b.name);
+                if (BUILDINGS[bpKey] && BUILDINGS[bpKey].upkeep) {
+                    if(BUILDINGS[bpKey].upkeep.wood) upkeepTotal.wood += BUILDINGS[bpKey].upkeep.wood;
+                    if(BUILDINGS[bpKey].upkeep.stone) upkeepTotal.stone += BUILDINGS[bpKey].upkeep.stone;
+                    if(BUILDINGS[bpKey].upkeep.gold) upkeepTotal.gold += BUILDINGS[bpKey].upkeep.gold;
+                    if(BUILDINGS[bpKey].upkeep.mana) upkeepTotal.mana += BUILDINGS[bpKey].upkeep.mana;
+                }
+            });
+            
+            // Subtract upkeep from resources
+            state.resources.wood -= upkeepTotal.wood;
+            state.resources.stone -= upkeepTotal.stone;
+            state.resources.gold -= upkeepTotal.gold;
+            state.resources.mana -= upkeepTotal.mana;
+
+            // Penalty for bankruptcy
+            if (state.resources.gold < 0) {
+                state.resources.gold = 0;
+                logEvent("BANKRUPT! Your towers are falling into disrepair!", "danger");
+                // You could shrink influence radii here as a penalty!
+            }
+
+            renderMenus(); // Refresh buttons (colors/locks) and task queue
+        }, 1000);
+
+        // ==========================================
+        // 5. ACTIONS (Adding to Queue)
+        // ==========================================
+        function startResearch(key) {
+            const tech = RESEARCH[key];
+            if (state.unlocked[key]) return logEvent("Already researched.", "danger");
+            if (state.tasks.find(t => t.itemKey === key)) return logEvent("Already researching.", "danger");
+            if (!hasResources(tech.cost)) return logEvent("Not enough resources.", "danger");
+
+            deductResources(tech.cost);
+            state.tasks.push({ id: generateUniqueId(), type: 'research', itemKey: key, progress: 0, maxTime: tech.time });
+            logEvent(`Started researching ${tech.name}. Will take ${tech.time}s.`);
+            renderMenus();
+        }
+
+        canvas.addEventListener('click', (e) => {
+            if (!state.buildMode) return;
+            const key = state.buildMode;
+            const bp = BUILDINGS[key];
+
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+
+            if (!isWithinInfluence(mx, my)) return logEvent("Must build within influence radius.", "danger");
+            if (!hasResources(bp.cost)) return logEvent("Not enough resources.", "danger");
+
+            deductResources(bp.cost);
+            
+            // Add to time queue instead of building instantly
+            state.tasks.push({ id: generateUniqueId(), type: 'build', itemKey: key, progress: 0, maxTime: bp.time, x: mx, y: my });
+            
+            logEvent(`Started building ${bp.name}. Will take ${bp.time}s.`);
+            state.buildMode = null;
+            renderMenus();
+        });
+
+        function formatCost(cost) {
+            return Object.entries(cost).map(([k, v]) => `${v} ${k.charAt(0).toUpperCase() + k.slice(1)}`).join(', ');
+        }
+
+        // ==========================================
+        // 6. UI RENDERING (Dynamic HTML generation)
+        // ==========================================
+        function renderMenus() {
+            // Update Top Bar
+
+            document.getElementById('r-wood').innerText =  state.resources.wood + " (" + (income.wood - upkeepTotal.wood) + ") ";
+            document.getElementById('r-stone').innerText = `${state.resources.stone} (${income.stone})`;
+            document.getElementById('r-gold').innerText = `${state.resources.gold} (${income.gold})`;
+            document.getElementById('r-mana').innerText = `${state.resources.mana} (${income.mana})`;
+
+            // Render Build Menu
+            let buildHTML = '';
+            for (let [key, bp] of Object.entries(BUILDINGS)) {
+                if (key === 'keep') continue;
+                let locked = bp.req && !state.unlocked[bp.req];
+                let afford = hasResources(bp.cost);
+                let btnClass = key === state.buildMode ? 'menu-btn active' : 'menu-btn';
+                
+                buildHTML += `<button class="${btnClass}" onclick="state.buildMode='${key}'; renderMenus();" ${locked || !afford ? 'disabled' : ''}>
+                    <strong>${bp.name}</strong> ${locked ? '<span class="locked-icon">🔒</span>' : ''}
+                    <span class="cost-tag">Cost: ${formatCost(bp.cost)}</span>
+                    <span class="time-tag">⏱ ${bp.time}s</span>
+                </button>`;
+            }
+            document.getElementById('build-container').innerHTML = buildHTML;
+
+            // Render Tech Tree
+            let techHTML = '';
+            for (let [key, tech] of Object.entries(RESEARCH)) {
+                if (state.unlocked[key]) continue; // Hide researched stuff
+                let locked = tech.req && !state.unlocked[tech.req];
+                let afford = hasResources(tech.cost);
+                let isResearching = state.tasks.find(t => t.itemKey === key);
+
+                techHTML += `<button class="menu-btn" onclick="startResearch('${key}')" ${locked || !afford || isResearching ? 'disabled' : ''}>
+                    <strong>${tech.name}</strong> ${locked ? '<span class="locked-icon">🔒</span>' : ''}
+                    <span class="cost-tag">${tech.desc}<br>Cost: ${formatCost(tech.cost)}</span>
+                    <span class="time-tag">⏱ ${tech.time}s</span>
+                </button>`;
+            }
+            document.getElementById('research-container').innerHTML = techHTML || '<div style="color:gray;font-size:0.8em;">All tech researched.</div>';
+
+            // Render Task Queue
+            let queueHTML = '';
+            state.tasks.forEach(task => {
+                let name = task.type === 'build' ? BUILDINGS[task.itemKey].name : RESEARCH[task.itemKey].name;
+                let percent = (task.progress / task.maxTime) * 100;
+                queueHTML += `
+                    <div class="task-item">
+                        [${task.type.toUpperCase()}] ${name} (${task.maxTime - task.progress}s left)
+                        <div class="task-bar-bg"><div class="task-bar-fill" style="width: ${percent}%"></div></div>
+                    </div>`;
+            });
+            document.getElementById('task-queue').innerHTML = queueHTML || '<div style="color:var(--text-muted);font-size:0.8em;">No active tasks.</div>';
+        }
+
+        function logEvent(msg, type = "normal") {
+            const log = document.getElementById('event-log');
+            log.innerHTML += `<div class="log-entry ${type}">[Day ${(Math.floor(state.tick / 60) + 1)}] ${msg}</div>`;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // ==========================================
+        // 7. CANVAS RENDERING (Visualizing Time)
+        // ==========================================
+        let mouseX = 0, mouseY = 0;
+        canvas.addEventListener('mousemove', (e) => {
+            const r = canvas.getBoundingClientRect(); mouseX = e.clientX - r.left; mouseY = e.clientY - r.top;
+        });
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Completed Influence Radii
+            placedBuildings.forEach(b => {
+                ctx.beginPath(); ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+                ctx.fillStyle = "rgba(14, 165, 233, 0.15)"; ctx.fill();
+                ctx.strokeStyle = "rgba(14, 165, 233, 0.4)"; ctx.stroke();
+            });
+
+            // 2. Resource Nodes
+            resourceNodes.forEach(node => {
+                ctx.beginPath(); ctx.arc(node.x, node.y, node.size, 0, Math.PI * 2);
+                ctx.fillStyle = node.type === 'wood' ? '#22c55e' : node.type === 'stone' ? '#9ca3af' : '#0ea5e9';
+                ctx.fill();
+            });
+
+            // 3. Completed Buildings
+            placedBuildings.forEach(b => {
+                ctx.fillStyle = b.color;
+                let size = b.name === 'Keep' ? 16 : 10; 
+                ctx.fillRect(b.x - size/2, b.y - size/2, size, size);
+                ctx.strokeStyle = '#000'; ctx.strokeRect(b.x - size/2, b.y - size/2, size, size);
+            });
+
+            // 4. Buildings Under Construction (SCAFFOLDING)
+            state.tasks.forEach(task => {
+                if (task.type === 'build') {
+                    const bp = BUILDINGS[task.itemKey];
+                    // Draw semi-transparent building
+                    ctx.fillStyle = bp.color;
+                    ctx.globalAlpha = 0.4 + (task.progress / task.maxTime) * 0.5; // Fades in as it builds
+                    ctx.fillRect(task.x - 5, task.y - 5, 10, 10);
+                    ctx.globalAlpha = 1.0;
+
+                    // Draw dashed construction radius
+                    ctx.beginPath();
+                    ctx.setLineDash([5, 5]);
+                    ctx.arc(task.x, task.y, bp.radius, 0, Math.PI * 2);
+                    ctx.strokeStyle = "rgba(251, 191, 36, 0.5)"; // Warning yellow
+                    ctx.stroke();
+                    ctx.setLineDash([]); // reset
+
+                    // Draw mini progress bar above it
+                    let percent = task.progress / task.maxTime;
+                    ctx.fillStyle = "#333"; ctx.fillRect(task.x - 10, task.y - 12, 20, 3);
+                    ctx.fillStyle = "#fbbf24"; ctx.fillRect(task.x - 10, task.y - 12, 20 * percent, 3);
+                }
+            });
+
+            // 5. Build Ghosting (Mouse)
+            if (state.buildMode) {
+                const bp = BUILDINGS[state.buildMode];
+                const valid = isWithinInfluence(mouseX, mouseY) && hasResources(bp.cost);
+                ctx.beginPath(); ctx.arc(mouseX, mouseY, bp.radius, 0, Math.PI * 2);
+                ctx.fillStyle = valid ? "rgba(34, 197, 94, 0.2)" : "rgba(239, 68, 68, 0.2)";
+                ctx.fill(); ctx.strokeStyle = valid ? "#22c55e" : "#ef4444"; ctx.stroke();
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        initMap(); draw();
+    </script>
+</body>
+</html>
