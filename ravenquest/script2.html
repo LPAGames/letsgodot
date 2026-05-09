@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RavenQuest: Visual Script Experience</title>
+    <style>
+        /* --- FONTS --- */
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Play:wght@400;700&family=Kalam:wght@400;700&display=swap');
+
+        :root {
+            --rq-gold: #d4af37;
+            --rq-gold-dim: #997a00;
+            --rq-dark: #0f1115;
+            --rq-panel: #1a1c23;
+            --rq-text: #e2e8f0;
+            --rq-hp: #e74c3c;
+            --rq-mana: #3498db;
+            --prompt-bg: #00e5ff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #050505;
+            background-image: radial-gradient(circle at center, #1a1c23 0%, #050505 100%);
+            color: var(--rq-text);
+            font-family: 'Play', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Container */
+        .script-container {
+            width: 100%;
+            max-width: 900px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            padding-bottom: 5rem;
+        }
+
+        /* Top Header / Quest Log */
+        .quest-log {
+            background: rgba(20, 20, 25, 0.9);
+            border: 2px solid var(--rq-gold);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .quest-log::before {
+            content: "QUEST UPDATED";
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--rq-dark);
+            color: var(--rq-gold);
+            padding: 0 10px;
+            font-family: 'Cinzel', serif;
+            font-weight: 800;
+            letter-spacing: 2px;
+        }
+
+        .quest-log h1 {
+            font-family: 'Cinzel', serif;
+            color: var(--rq-text);
+            margin-bottom: 0.5rem;
+        }
+
+        .quest-log p {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        /* Scene Heading (Script Style) */
+        .scene-heading {
+            font-family: 'Cinzel', serif;
+            font-size: 1.2rem;
+            color: var(--rq-gold);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--rq-gold-dim);
+            padding-bottom: 0.5rem;
+            margin-top: 2rem;
+        }
+
+        /* Comic Panel for Actions */
+        .comic-panel {
+            background: #fdf6e3; /* Parchment look */
+            color: #111;
+            font-family: 'Kalam', cursive; /* Comic book handwriting style */
+            font-size: 1.2rem;
+            padding: 1.5rem;
+            border: 3px solid #111;
+            box-shadow: 5px 5px 0px rgba(212, 175, 55, 0.5);
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            border-radius: 4px;
+        }
+
+        .comic-panel::before {
+            content: "ACTION PANEL";
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: #111;
+            color: var(--rq-gold);
+            font-family: 'Play', sans-serif;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            text-transform: uppercase;
+        }
+
+        /* The AI Prompt Reveal Magic */
+        .comic-panel .prompt-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 20, 30, 0.95);
+            color: var(--prompt-bg);
+            font-family: monospace;
+            font-size: 1rem;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: left;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            border: 2px solid var(--prompt-bg);
+            box-shadow: 0 0 15px var(--prompt-bg);
+        }
+
+        .comic-panel:hover .prompt-overlay {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .comic-panel:hover {
+            transform: scale(1.02);
+            box-shadow: none;
+        }
+
+        /* Visual Novel Dialogue Style */
+        .vn-dialogue {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+            margin: 1rem 0;
+        }
+
+        .vn-dialogue.right {
+            flex-direction: row-reverse;
+        }
+
+        /* Character Portrait */
+        .vn-portrait {
+            width: 100px;
+            height: 100px;
+            min-width: 100px;
+            border-radius: 8px;
+            border: 3px solid var(--rq-gold-dim);
+            background-color: var(--rq-panel);
+            background-size: cover;
+            background-position: center;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        /* Dialogue Box */
+        .vn-box {
+            background: rgba(26, 28, 35, 0.95);
+            border: 2px solid #333;
+            border-radius: 8px;
+            flex-grow: 1;
+            padding: 1rem 1.5rem;
+            position: relative;
+        }
+
+        .vn-box::after {
+            content: '';
+            position: absolute;
+            top: 20px;
+            width: 0; 
+            height: 0; 
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+        }
+
+        /* Speech bubble pointer left */
+        .vn-dialogue:not(.right) .vn-box::after {
+            left: -12px;
+            border-right: 10px solid #333;
+        }
+
+        /* Speech bubble pointer right */
+        .vn-dialogue.right .vn-box::after {
+            right: -12px;
+            border-left: 10px solid #333;
+        }
+
+        .vn-name {
+            font-family: 'Cinzel', serif;
+            font-weight: 800;
+            color: var(--rq-gold);
+            font-size: 1.2rem;
+            margin-bottom: 0.3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 0.3rem;
+        }
+
+        .vn-archetype {
+            font-family: 'Play', sans-serif;
+            font-size: 0.8rem;
+            color: #888;
+            background: #111;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid #333;
+        }
+
+        .vn-text {
+            font-size: 1.05rem;
+            line-height: 1.5;
+            color: #fff;
+        }
+
+        .vn-emotion {
+            font-style: italic;
+            color: #aaa;
+            font-size: 0.9rem;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Hire Me / Pitch Banner */
+        .hire-banner {
+            background: linear-gradient(45deg, var(--rq-panel), #2a113a);
+            border: 1px solid var(--prompt-bg);
+            padding: 2rem;
+            text-align: center;
+            border-radius: 8px;
+            margin-top: 4rem;
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);
+        }
+
+        .hire-banner h2 {
+            font-family: 'Cinzel', serif;
+            color: var(--prompt-bg);
+            margin-bottom: 1rem;
+        }
+
+        .btn-hire {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.8rem 2rem;
+            background: var(--prompt-bg);
+            color: #000;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        .btn-hire:hover {
+            box-shadow: 0 0 15px var(--prompt-bg);
+            transform: translateY(-2px);
+        }
+
+        /* Responsive */
+        @media(max-width: 600px) {
+            .vn-dialogue { flex-direction: column; }
+            .vn-dialogue.right { flex-direction: column; }
+            .vn-box::after { display: none; }
+            .vn-portrait { width: 60px; height: 60px; min-width: 60px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="script-container">
+
+        <!-- Series / Episode Header -->
+        <div class="quest-log">
+            <h1>RAVENQUEST: ANIMATED</h1>
+            <p>Episode 3: "The Tradepack Ambush"</p>
+            <p style="margin-top: 10px; color: var(--prompt-bg); font-size: 0.85rem;">[Hover over the comic action panels to reveal the AI generation prompts used for the animation]
+            </p>
+        </div>
+
+        <!-- SCENE 1 -->
+        <div class="scene-heading">LOCATION DISCOVERED: ROHNA WOODS - DUSK</div>
+
+        <div class="comic-panel">
+            <p>The dense pixelated canopy of Rohna Woods blocks out the setting sun. A heavy, creaking wooden cart, overflowing with crafted Tradepacks, slowly rolls down the dirt path.</p>
+            <div class="prompt-overlay">
+                /imagine prompt: Cinematic low angle shot, a heavy medieval wooden cart filled with glowing magical trade-packs moving through a dense, dark fantasy forest, pixel-art textures translated to realistic lighting, UE5, volumetric fog, dusk --ar 16:9 --v 6.0
+            </div>
+        </div>
+
+        <!-- Nyter Dialogue -->
+        <div class="vn-dialogue">
+            <!-- Replace the URL with your AI portrait of Nyter -->
+            <div class="vn-portrait" style="background-image: url('https://placehold.co/100x100/1a1c23/d4af37?text=Nyter');"></div>
+            <div class="vn-box">
+                <div class="vn-name">Nyter <span class="vn-archetype">Holy / Warfare</span></div>
+                <span class="vn-emotion">(gripping his broadsword tightly, scanning the trees)</span>
+                <div class="vn-text">We should have taken the coastal route. The Ranger's Company board warned that goblin spawn rates in Rohna Woods are up 40% today. If we lose these tradepacks, I'm out 10,000 silver.</div>
+            </div>
+        </div>
+
+        <!-- Gabriela Dialogue (Right aligned) -->
+        <div class="vn-dialogue right">
+            <!-- Replace the URL with your AI portrait of Gabriela -->
+            <div class="vn-portrait" style="background-image: url('https://placehold.co/100x100/1a1c23/9b59b6?text=Gabi'); border-color: #9b59b6;"></div>
+            <div class="vn-box">
+                <div class="vn-name">Gabriela <span class="vn-archetype">Archery / Shadow</span></div>
+                <span class="vn-emotion">(sitting casually on top of the tradepacks, sharpening an arrow)</span>
+                <div class="vn-text">Relax, tank. You have me. Besides, coastal route means pirates. Here, the worst we get is a few boars and... wait. Stop the cart.</div>
+            </div>
+        </div>
+
+        <div class="comic-panel">
+            <p>Gabriela jumps off the cart. The wind stops. From the shadows of the woods, three glowing red UI targets appear overhead. BANDITS.</p>
+            <div class="prompt-overlay">
+                /imagine prompt: First person view looking into a dark forest, three glowing red eyes appearing in the shadows, medieval bandits holding rusty daggers, dynamic combat lighting, cinematic depth of field, mmorpg ui elements in environment --ar 16:9
+            </div>
+        </div>
+
+        <!-- Nyter Dialogue -->
+        <div class="vn-dialogue">
+            <div class="vn-portrait" style="background-image: url('https://placehold.co/100x100/1a1c23/d4af37?text=Nyter');"></div>
+            <div class="vn-box">
+                <div class="vn-name">Nyter <span class="vn-archetype">Holy / Warfare</span></div>
+                <span class="vn-emotion">(draws sword, casting a golden aura)</span>
+                <div class="vn-text">Players. PKers! They're flagged for PvP! Get behind me, I'll use Provoke!</div>
+            </div>
+        </div>
+
+        <div class="comic-panel">
+            <p>Before Nyter can strike, a loud 'KWEH!' echoes through the forest. A majestic, high-tier MOA mount bursts through the bushes at full sprint, kicking the lead Bandit into a tree.</p>
+            <div class="prompt-overlay">
+                /imagine prompt: A giant, majestic, colorful Moa bird mount from a fantasy game sprinting out of the bushes, kicking a thief into a tree, dynamic motion blur, high action fantasy scene, hyper-detailed feathers, 8k --ar 16:9
+            </div>
+        </div>
+
+        <!-- Rice Dialogue -->
+        <div class="vn-dialogue">
+            <!-- Replace the URL with your AI portrait of Rice -->
+            <div class="vn-portrait" style="background-image: url('https://placehold.co/100x100/1a1c23/3498db?text=Rice'); border-color: #3498db;"></div>
+            <div class="vn-box">
+                <div class="vn-name">Rice <span class="vn-archetype">Spiritual / Water</span></div>
+                <span class="vn-emotion">(holding a fishing rod in one hand, reining the Moa with the other)</span>
+                <div class="vn-text">Did someone order a healer? I was fishing at Zephyr Vale but my Moa smelled the combat. Are we fighting or what? My buffs are ticking!</div>
+            </div>
+        </div>
+
+        <div class="scene-heading">COMBAT ENGAGED</div>
+
+        <div class="comic-panel">
+            <p>Nyter smirks, his blade glowing with Holy energy. Gabriela pulls back a shadow-infused arrow. Rice's Moa screeches. The screen fades to black as the battle theme begins.</p>
+            <div class="prompt-overlay">
+                /imagine prompt: Epic cinematic wide shot, a paladin, a ranger, and a healer on a giant bird mount standing together ready for battle against shadowy bandits in a forest, glowing weapons, beautiful composition, unreal engine 5 render --ar 16:9
+            </div>
+        </div>
+
+        <!-- Pitch to Game Studios / Publicity -->
+        <div class="hire-banner">
+            <h2>Summon AI Animation for Your Next Project</h2>
+            <p>Love this script format? This is how I bring gaming lore to life.</p>
+            <p style="margin-top: 15px; font-size: 0.9rem; color: #ccc;">
+                I am the solo creator behind <strong>@RavenQuestAnimation</strong>, specializing in converting scripts into fully directed, animated, and voice-acted sequences using cutting-edge AI. Whether you are an indie game studio needing a cinematic lore trailer, or an agency looking for rapid, high-quality publicity commercials—I provide full-stack AI production.
+            </p>
+            <a href="https://youtube.com/@RavenQuestAnimation" target="_blank" class="btn-hire">View My Portfolio & Hire Me</a>
+        </div>
+
+    </div>
+
+</body>
+</html>
